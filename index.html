@@ -2990,10 +2990,60 @@ html.js.modo-recorrido #pie{ display:none; }
          crecen un poco en altura para que asomen por encima de la
          coronación del parapeto, que es lo que el visitante tiene
          delante al mirar desde la cima. */
-      { n: 64,  zMin: 66,  zRango: 52,  xMin: 22, xRango: 66,  hMin: 5.0, hRango: 10.5, color: 0xA78961, niebla: 0.36 },
-      { n: 104, zMin: 112, zRango: 78,  xMin: 17, xRango: 112, hMin: 4.0, hRango: 11.0, color: 0x987A58, niebla: 0.28 },
-      { n: 176, zMin: 176, zRango: 92,  xMin: 12, xRango: 168, hMin: 2.8, hRango: 9, color: 0x846B50, niebla: 0.20 }
+      { n: 64,  zMin: 66,  zRango: 52,  xMin: 22, xRango: 66,  hMin: 5.0, hRango: 10.5, color: 0x8B6E47, niebla: 0.36 },
+      { n: 104, zMin: 112, zRango: 78,  xMin: 17, xRango: 112, hMin: 4.0, hRango: 11.0, color: 0x7F6444, niebla: 0.28 },
+      { n: 176, zMin: 176, zRango: 92,  xMin: 12, xRango: 168, hMin: 2.8, hRango: 9, color: 0x6F583E, niebla: 0.20 }
     ];
+    /* EL ZIGURAT DE EANNA
+       La ciudad se leía como grano lejano bajo la bruma: desde la
+       coronación, la vista es casi horizontal y los barrios quedan muy por
+       debajo del ojo. Faltaba lo único que dice «Uruk» de un vistazo.
+
+       El zigurat se alza fuera del eje de marcha, lo bastante alto para
+       cortar el horizonte a la altura de la mirada, y lo bastante cerca
+       para que la niebla no lo disuelva. Cinco cuerpos decrecientes y la
+       escalinata frontal: la silueta que ordena todo el perfil. */
+    (function () {
+      /* A x=-62 / z-118 caía a 28° del eje: justo detrás del panel de
+         texto, que ocupa el tercio izquierdo de la pantalla. Se aleja
+         manteniendo una silueta grande pero llevándolo a 12° del eje, donde
+         se ve entero; la mayor distancia se compensa con la altura. */
+      var zx = -31, zz = z0 - 205, cuerpos = 6;
+      var anchoBase = 58, fondoBase = 46, altoCuerpo = 8.8;
+      var matZig = superficie('ladrillo', 0x8E6A3E, 3, 1, 1.0);
+      var matRampa = superficie('ladrillo', 0x7A5733, 1, 1, 1.0);
+      for (var k = 0; k < cuerpos; k++) {
+        var merma = k / cuerpos;
+        var an = anchoBase * (1 - merma * 0.62);
+        var fo = fondoBase * (1 - merma * 0.62);
+        var cuerpo = new THREE.Mesh(
+          new THREE.BoxGeometry(an, altoCuerpo, fo, 1, 2, 1), matZig);
+        cuerpo.position.set(zx, SUELO_LLANURA + altoCuerpo * (k + 0.5), zz);
+        cuerpo.castShadow = cuerpo.receiveShadow = true;
+        cuerpo.userData.estructura = true;
+        hornearAO(cuerpo, 'prop');
+        grupo.add(cuerpo);
+      }
+      /* El templo alto: el remate blanco que se veía desde la llanura. */
+      var templo = new THREE.Mesh(
+        new THREE.BoxGeometry(14, 9, 11, 1, 2, 1),
+        superficie('caliza', 0xD8CDB2, 1, 1, 1.0));
+      templo.position.set(zx, SUELO_LLANURA + altoCuerpo * cuerpos + 4.5, zz);
+      templo.castShadow = templo.receiveShadow = true;
+      templo.userData.estructura = true;
+      hornearAO(templo, 'prop');
+      grupo.add(templo);
+      /* Escalinata frontal, inclinada contra la cara que mira al recorrido. */
+      var rampa = new THREE.Mesh(
+        new THREE.BoxGeometry(11, 1.8, altoCuerpo * cuerpos * 1.55), matRampa);
+      rampa.position.set(zx, SUELO_LLANURA + altoCuerpo * cuerpos * 0.5,
+                         zz + fondoBase * 0.5 + 6);
+      rampa.rotation.x = -0.72;
+      rampa.castShadow = rampa.receiveShadow = true;
+      rampa.userData.estructura = true;
+      grupo.add(rampa);
+    })();
+
     var dummyC = new THREE.Object3D();
     capas.forEach(function (cp, capaIdx) {
       var matCasa = new THREE.MeshStandardMaterial({
@@ -4551,6 +4601,7 @@ html.js.modo-recorrido #pie{ display:none; }
     var cinta = new THREE.Mesh(g, matSuelo);
     cinta.receiveShadow = true;
     cinta.userData.estructura = true;
+    cinta.userData.planar = true;
     mundo.add(cinta);
 
     /* Calzada central: una franja más clara por el centro del paso, la
@@ -4579,6 +4630,7 @@ html.js.modo-recorrido #pie{ display:none; }
     var calzada = new THREE.Mesh(gc, matCalzada);
     calzada.receiveShadow = true;
     calzada.userData.estructura = true;
+    calzada.userData.planar = true;
     mundo.add(calzada);
 
     // Bordes: dan lectura al desnivel y evitan el efecto de lámina flotante
@@ -4611,6 +4663,7 @@ html.js.modo-recorrido #pie{ display:none; }
       gb.computeVertexNormals();
       var borde = new THREE.Mesh(gb, matBorde);
       borde.userData.estructura = true;
+      borde.userData.planar = true;
       borde.userData.tipoMaterial = 'borde-procesional-ishtar';
       mundo.add(borde);
     });
@@ -4952,11 +5005,19 @@ html.js.modo-recorrido #pie{ display:none; }
         if (!o.isMesh && !o.isInstancedMesh) return;
         var tipo = o.userData.tipoMaterial || '';
         var instanciaLejana = /^(uruk-instancias|pavimento-uruk)/.test(tipo);
+        /* Las cintas del recorrido —suelo, calzada y faldones— son tiras de
+           UNA SOLA CARA construidas a mano, sin espesor. Al darles sombra
+           propia se oscurecían enteras: para dibujar el mapa, three.js
+           invierte la cara de un material FrontSide, de modo que la tira
+           quedaba por detrás de su propia sombra. El faldón del muro de
+           ascenso a Ishtar desaparecía por eso. Reciben sombra, no la
+           proyectan: sin volumen no hay nada que proyectar. */
+        var planar = o.userData.planar === true;
         var m = o.material;
         var etereo = m && (m.transparent === true || m.isMeshBasicMaterial ||
                            m.isPointsMaterial || m.isLineBasicMaterial);
         o.receiveShadow = true;
-        o.castShadow = !instanciaLejana && !etereo;
+        o.castShadow = !instanciaLejana && !etereo && !planar;
         if (o.castShadow) n++;
       });
       return n;
