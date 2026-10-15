@@ -1,0 +1,9 @@
+# index.html se genera con construir.py a partir de index-dev.html.
+# Se versiona a propósito: es el archivo que publica Firebase Hosting.
+.DS_Store
+__pycache__/
+.firebase/
+.thumbnail
+firebase-debug.log
+firebase-debug.*.log
+node_modules/

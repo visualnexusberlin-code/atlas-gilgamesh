@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Metodología | Gilgamesh — La Memoria de Uruk</title>
+<meta name="description" content="Cómo se ha hecho esta experiencia: investigación, fuentes, herramientas, criterios editoriales y la diferencia entre autoría intelectual y asistencia técnica.">
+<link rel="canonical" href="https://epic-gilgamesh.web.app/metodologia">
+<link rel="alternate" hreflang="es" href="https://epic-gilgamesh.web.app/metodologia">
+<meta name="robots" content="index,follow">
+<meta property="og:type" content="article">
+<meta property="og:locale" content="es_ES">
+<meta property="og:title" content="Metodología | Gilgamesh — La Memoria de Uruk">
+<meta property="og:description" content="Investigación, fuentes, herramientas y criterios editoriales del proyecto.">
+<meta property="og:url" content="https://epic-gilgamesh.web.app/metodologia">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,500&family=Archivo:wght@300;400;500&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --betun:      #12100C;
+  --barro:      #2A2118;
+  --adobe:      #8C6A44;
+  --arena:      #C9A876;
+  --hueso:      #E8DFCB;
+  --lapis:      #2456A6;
+  --lapis-luz:  #5E8FD8;
+  --sol:        #E8A34D;
+
+  --f-display: "Fraunces", Georgia, serif;
+  --f-body:    "Archivo", system-ui, sans-serif;
+  --f-util:    "JetBrains Mono", ui-monospace, monospace;
+
+  --u: 8px;
+  --medida: 64ch;
+}
+*,*::before,*::after{ box-sizing:border-box; }
+body{
+  margin:0;
+  background:var(--betun);
+  color:var(--hueso);
+  font-family:var(--f-body);
+  font-weight:300;
+  font-size:clamp(15px,1.05vw,17px);
+  line-height:1.72;
+  -webkit-font-smoothing:antialiased;
+}
+a{ color:var(--lapis-luz); text-underline-offset:.25em; }
+a:focus-visible{ outline:2px solid var(--sol); outline-offset:3px; border-radius:2px; }
+
+.cuna{
+  display:inline-block; width:13px; height:13px;
+  background:currentColor;
+  clip-path:polygon(0 0, 100% 50%, 0 100%, 22% 50%);
+}
+
+.contenedor{ max-width:var(--medida); margin:0 auto; padding:calc(var(--u)*10) calc(var(--u)*4) calc(var(--u)*12); }
+
+.volver{
+  display:inline-flex; align-items:center; gap:var(--u);
+  font-family:var(--f-util); font-size:11px; letter-spacing:.18em; text-transform:uppercase;
+  color:#8C7F6C; text-decoration:none; margin-bottom:calc(var(--u)*7);
+  transition:color .3s;
+}
+.volver:hover{ color:var(--hueso); }
+.volver .cuna{ transform:scaleX(-1); }
+
+.eyebrow{
+  font-family:var(--f-util); font-size:11px; letter-spacing:.24em;
+  text-transform:uppercase; color:var(--adobe); margin:0 0 calc(var(--u)*2);
+}
+h1{
+  font-family:var(--f-display); font-weight:300;
+  font-size:clamp(34px,5.5vw,58px); line-height:1.04;
+  letter-spacing:-.02em; margin:0 0 calc(var(--u)*4);
+  font-variation-settings:"opsz" 144;
+}
+.destacado{
+  font-size:clamp(16px,1.4vw,19px); color:#CFC4AF;
+  border-left:2px solid var(--lapis);
+  padding-left:calc(var(--u)*3); margin:0 0 calc(var(--u)*4);
+}
+
+h2{
+  font-family:var(--f-display); font-weight:300;
+  font-size:clamp(23px,3vw,32px); line-height:1.12;
+  letter-spacing:-.015em;
+  margin:calc(var(--u)*9) 0 calc(var(--u)*2.5);
+  padding-top:calc(var(--u)*5);
+  border-top:1px solid var(--barro);
+}
+h3{
+  font-family:var(--f-util); font-weight:400; font-size:12px;
+  letter-spacing:.16em; text-transform:uppercase; color:var(--arena);
+  margin:calc(var(--u)*4) 0 var(--u);
+}
+p{ color:#CFC4AF; margin:0 0 calc(var(--u)*2.5); }
+ul{ color:#CFC4AF; padding-left:1.15em; margin:0 0 calc(var(--u)*2.5); }
+li{ margin-bottom:var(--u); }
+strong{ color:var(--hueso); font-weight:500; }
+em{ color:var(--arena); }
+
+.nota{
+  margin-top:calc(var(--u)*10);
+  padding:calc(var(--u)*4);
+  background:#0D0B08;
+  border:1px solid var(--barro);
+  border-left:2px solid var(--adobe);
+}
+.nota h2{
+  border:0; padding:0; margin:0 0 calc(var(--u)*2);
+  font-family:var(--f-util); font-size:11px; font-weight:400;
+  letter-spacing:.22em; text-transform:uppercase; color:var(--adobe);
+}
+.nota p{ font-size:14px; color:#9C8F7C; margin:0; }
+
+.pie{
+  margin-top:calc(var(--u)*8);
+  font-family:var(--f-util); font-size:11px; letter-spacing:.14em;
+  text-transform:uppercase;
+  display:flex; gap:calc(var(--u)*3); flex-wrap:wrap;
+}
+
+@media (max-width:700px){
+  .contenedor{ padding-inline:calc(var(--u)*3); }
+}
+@media (prefers-reduced-motion:reduce){
+  *{ transition-duration:.01ms !important; animation-duration:.01ms !important; }
+}
+</style>
+</head>
+<body>
+<main class="contenedor">
+  <a class="volver" href="./"><span class="cuna" aria-hidden="true"></span>Volver al recorrido</a>
+
+  <p class="eyebrow">Atlas Humanitas · Biblioteca Visual de la Antigüedad</p>
+  <h1>Cómo se ha hecho esta experiencia</h1>
+  <p class="destacado">
+    Esta página existe para que cualquiera pueda saber qué parte del proyecto es
+    investigación y criterio humano, qué parte es producción asistida por
+    máquinas, y dónde está exactamente la frontera.
+  </p>
+
+  <h2>Investigación previa</h2>
+  <p>
+    El recorrido parte de una lectura completa de la epopeya y de la selección de
+    doce episodios que sostienen su arco: la tiranía, la aparición del igual, la
+    amistad, la hazaña, la pérdida, la huida de la muerte y el regreso. La
+    selección es editorial: la obra conserva más episodios, variantes y lagunas
+    de las que aquí se muestran.
+  </p>
+  <p>
+    La secuencia espacial se diseñó antes que el código. Cada sala responde a un
+    estado del protagonista, y la progresión de lo cerrado a lo abierto reproduce
+    el movimiento del poema: el héroe pierde poder y gana comprensión. El hilo de
+    lapislázuli del suelo es el único elemento que no cambia en todo el trayecto.
+  </p>
+
+  <h2>Fuentes originales</h2>
+
+  <h3>El texto</h3>
+  <ul>
+    <li>La <strong>Epopeya de Gilgamesh</strong> en su recensión estándar acadia, transmitida en tablillas cuneiformes, junto con los poemas sumerios previos sobre Bilgames.</li>
+    <li>Las citas se reproducen sin alteración, entrecomilladas y atribuidas. Los textos explicativos que las acompañan son redacción propia.</li>
+  </ul>
+
+  <h3>Las piezas arqueológicas</h3>
+  <p>
+    El corredor incorpora fotografías de <strong>seis piezas reales</strong>: las
+    tablillas de Gilgameš y Aga, el sello de Mesannepada, Ninurta y Anzu, el
+    hombre-escorpión y la Tablilla del Diluvio. Cada una se identifica en el
+    visor con su nombre.
+  </p>
+  <p>
+    Junto a ellas hay <strong>cinco tablillas cuneiformes generadas por
+    código</strong>. Están rotuladas como recreación en el propio visor,
+    precisamente para que no se confundan con las piezas documentales: la
+    escritura que muestran es ornamento, no texto legible.
+  </p>
+
+  <h3>La arquitectura</h3>
+  <ul>
+    <li>Documentación sobre Uruk y la construcción mesopotámica en adobe y ladrillo cocido, para las proporciones y los materiales de las salas.</li>
+    <li>La puerta de Ishtar del Pergamonmuseum de Berlín, como referencia del ladrillo vidriado azul que anuncia la última transición.</li>
+  </ul>
+
+  <h2>Herramientas utilizadas</h2>
+  <ul>
+    <li><strong>Modelos de imagen</strong>: generación de las ilustraciones de estación, dirigidas mediante descripciones escritas por el autor. Cada una lleva su aviso junto al recurso.</li>
+    <li><strong>Modelos de lenguaje</strong>: apoyo en la redacción, la estructuración del guion y la escritura de código.</li>
+    <li><strong>Three.js</strong>: construcción del espacio tridimensional. Toda la geometría es procedural, escrita en código; no se han utilizado modelos 3D de terceros. Las texturas de piedra, ladrillo y pavimento se generan por código a partir de campos de altura.</li>
+    <li><strong>Web Audio</strong>: la tormenta de la estación VI se sintetiza en el navegador; no es una grabación.</li>
+  </ul>
+
+  <h2>Criterios editoriales</h2>
+  <ul>
+    <li>Los pasajes citados no se reescriben, no se modernizan y no se abrevian.</li>
+    <li>Lo generado por código nunca se presenta como documento: las tablillas recreadas van rotuladas como tales, y el ornamento cuneiforme de los muros es decorativo y no simula escritura legible.</li>
+    <li>La obra completa se puede leer sin activar el recorrido tridimensional. La experiencia es una puerta, no un peaje.</li>
+    <li>Lo que es interpretación del autor se presenta como interpretación, no como dato arqueológico.</li>
+    <li>La estación XII ha sido objeto de una decisión editorial explícita, señalada aquí: la Tablilla XII es un apéndice tardío, traducción de un poema sumerio independiente, y su diálogo con el espíritu de Enkidu no pertenece al arco de la recensión estándar. El recorrido cierra donde cierra el poema: en el regreso a Uruk y en las murallas como único legado.</li>
+  </ul>
+
+  <h2>Autoría intelectual y asistencia técnica</h2>
+  <p>
+    <strong>Autoría intelectual</strong>: la concepción del proyecto, la selección
+    de episodios, el diseño de la secuencia espacial, la dirección de arte, la
+    redacción y la revisión de todo el contenido publicado.
+  </p>
+  <p>
+    <strong>Asistencia técnica</strong>: la generación de borradores de texto, de
+    imágenes y de código a partir de instrucciones del autor. Ningún resultado se
+    publica sin revisión y edición humana.
+  </p>
+  <p>
+    Dicho de otro modo: <em>las herramientas ejecutan, no deciden</em>. Las
+    decisiones y la responsabilidad sobre lo publicado son del autor.
+  </p>
+
+  <div class="nota">
+    <h2>Aviso general</h2>
+    <p>
+      Esta experiencia ha sido concebida, investigada y dirigida por su autor.
+      Durante el proceso de diseño, programación, traducción y producción se han
+      utilizado herramientas de inteligencia artificial como apoyo creativo y
+      técnico. La selección, organización, revisión y dirección editorial del
+      contenido corresponden al autor.
+    </p>
+  </div>
+
+  <nav class="pie">
+    <a href="./">Volver al recorrido</a>
+    <a href="https://atlas-humanitas.web.app">Atlas Humanitas</a>
+  </nav>
+</main>
+</body>
+</html>
