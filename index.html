@@ -2931,6 +2931,11 @@ html.js.modo-recorrido #pie{ display:none; }
     }
   }
 
+  /* Cota del terreno: construirLlanura tiende el suelo en y = -3.5
+     absoluto. Todo lo que pertenece a la llanura —y la ciudad pertenece a
+     la llanura, no a la muralla— se referencia aquí y no a `base`. */
+  var SUELO_LLANURA = -3.5;
+
   function construirUruk(grupo, base, z0, matMuro, matPiedra) {
     construirLlanura(grupo, base, z0);
 
@@ -3015,7 +3020,17 @@ html.js.modo-recorrido #pie{ display:none; }
         /* Unas pocas casas-torre y palacios ordenan la trama sin convertir
            el horizonte entero en una colección de bloques enormes. */
         if (azarCiudad() < 0.11) { an *= 1.34; h *= 1.38; }
-        dummyC.position.set(cx, base - 3.5 + h / 2, cz);
+        /* SOBRE EL TERRENO, NO SOBRE LA MURALLA.
+           Estaba en `base - 3.5`. La llanura se tiende en y = -3.5
+           ABSOLUTO, así que sumar `base` subía la ciudad entera las 20
+           unidades que mide la muralla: las casas quedaban flotando a la
+           altura del adarve y, vistas por el vano de Ishtar, se leían como
+           un puñado de cubos apoyados en el pavimento de la cima.
+
+           Al bajarlas al terreno se recupera además el sentido del pasaje:
+           desde la coronación se mira HACIA ABAJO la ciudad construida,
+           que es lo que Gilgamesh comprende al final del poema. */
+        dummyC.position.set(cx, SUELO_LLANURA + h / 2, cz);
         dummyC.rotation.set(0, (azarCiudad() - 0.5) * 0.18, 0);
         dummyC.scale.set(an, h, prof); dummyC.updateMatrix();
         casas.setMatrixAt(i, dummyC.matrix);
@@ -3026,7 +3041,7 @@ html.js.modo-recorrido #pie{ display:none; }
 
         var hTop = 0.65 + azarCiudad() * 1.8;
         var escalon = azarCiudad() < 0.68 ? 0.58 : 0.34;
-        dummyC.position.set(cx, base - 3.5 + h + hTop / 2, cz);
+        dummyC.position.set(cx, SUELO_LLANURA + h + hTop / 2, cz);
         dummyC.scale.set(an * escalon, hTop, prof * (0.48 + azarCiudad()*0.18));
         dummyC.updateMatrix(); azoteas.setMatrixAt(i, dummyC.matrix);
         azoteas.setColorAt(i, tono.clone().offsetHSL(0, -0.03, 0.045));
@@ -4857,14 +4872,15 @@ html.js.modo-recorrido #pie{ display:none; }
     luzCielo = new THREE.HemisphereLight(0xE8A34D, 0x120C06, 0.26);
     escena.add(luzCielo);
 
-    // Luz de la estación, con sombras: es la que modela el espacio
+    /* Luz de la estación: da el COLOR y el nivel de cada sala.
+       Ya no proyecta. Su sombra era un cubemap —seis renderizados de la
+       escena entera por actualización— y nacía casi en el ojo del
+       visitante, así que caía detrás de los objetos y apenas se veía;
+       pagábamos el procedimiento más caro del motor por el resultado menos
+       visible, y encima obligaba a refrescar sólo cada diez fotogramas. El
+       trabajo de modelar el volumen pasa a la rasante, que es direccional:
+       un solo renderizado ortográfico, y puede refrescarse cada fotograma. */
     luzEstacion = new THREE.PointLight(0xFFC27A, 2.9, 105, 2.0);
-    luzEstacion.castShadow = true;
-    luzEstacion.shadow.mapSize.width = luzEstacion.shadow.mapSize.height = 1024;
-    luzEstacion.shadow.camera.near = 0.6;
-    luzEstacion.shadow.camera.far = 60;
-    luzEstacion.shadow.bias = -0.0026;
-    luzEstacion.shadow.radius = 3;
     escena.add(luzEstacion);
 
     /* CUATRO LUCES DE ANTORCHA, SIEMPRE LAS MISMAS
@@ -4885,13 +4901,66 @@ html.js.modo-recorrido #pie{ display:none; }
     }
 
     // Rasante fría: separa los volúmenes del fondo
-    luzRasante = new THREE.DirectionalLight(0x9BB4D8, 0.22);
+    /* LA LUZ QUE DIBUJA LOS VOLÚMENES
+       Hasta ahora la única luz con sombra era la de estación, y es PUNTUAL:
+       su sombra es un cubemap —seis renderizados— tan caro que sólo podía
+       refrescarse cada diez fotogramas, y además nace casi donde está el
+       observador, de modo que proyecta hacia atrás y apenas se ve nada.
+       El resultado era un corredor de cajas iluminadas por igual: sin
+       sombra proyectada no hay volumen, y los cantos a noventa grados se
+       leían como primitivas sin acabar.
+
+       La rasante ya existía; sólo le faltaba proyectar. Es DIRECCIONAL, así
+       que su sombra es un único mapa ortográfico: una fracción del coste de
+       la puntual. Y viene de un lado y de arriba, que es como se revela el
+       relieve de un muro. No se añade ninguna luz nueva: el número sigue
+       siendo ocho y los shaders no se recompilan por cambio de recuento. */
+    luzRasante = new THREE.DirectionalLight(0x9BB4D8, 0.30);
     luzRasante.position.set(-30, 26, 14);
+    luzRasante.castShadow = true;
+    luzRasante.shadow.mapSize.width = luzRasante.shadow.mapSize.height = 2048;
+    /* El volumen de sombra acompaña a la cámara (ver animar): basta con
+       cubrir la sala en la que se está, no las doce. */
+    var sc = luzRasante.shadow.camera;
+    sc.left = -46; sc.right = 46; sc.top = 52; sc.bottom = -34;
+    sc.near = 1; sc.far = 190;
+    sc.updateProjectionMatrix();
+    luzRasante.shadow.bias = -0.0008;
+    luzRasante.shadow.normalBias = 0.55;   // evita el acné en muros oblicuos
+    luzRasante.shadow.radius = 2.4;
     escena.add(luzRasante);
+    escena.add(luzRasante.target);
 
     var mundo = new THREE.Group();
     ESTACIONES.forEach(function (e) { construirCamara(e, mundo); });
     escena.add(mundo);
+
+    /* Las sombras se activaban malla a malla, y sólo dieciocho de las
+       setenta y cinco las tenían: zócalos, hornacinas, vigas, almenas y
+       contrafuertes no proyectaban nada y el corredor se leía plano. Un
+       barrido final se las da a todas y evita que vuelva a olvidarse al
+       añadir geometría.
+
+       Quedan fuera, a propósito: la llanura, el telón y el agua, que son
+       superficies enormes y sólo RECIBEN; las instancias de la ciudad y el
+       pavimento, que suman cientos de volúmenes a distancia donde una
+       sombra propia no se distingue y sí se paga; y el polvo, la lluvia y
+       los rótulos, que no son materia. */
+    function repartirSombras(raiz) {
+      var n = 0;
+      raiz.traverse(function (o) {
+        if (!o.isMesh && !o.isInstancedMesh) return;
+        var tipo = o.userData.tipoMaterial || '';
+        var instanciaLejana = /^(uruk-instancias|pavimento-uruk)/.test(tipo);
+        var m = o.material;
+        var etereo = m && (m.transparent === true || m.isMeshBasicMaterial ||
+                           m.isPointsMaterial || m.isLineBasicMaterial);
+        o.receiveShadow = true;
+        o.castShadow = !instanciaLejana && !etereo;
+        if (o.castShadow) n++;
+      });
+      return n;
+    }
 
     /* RUTA MONÓTONA
        La Catmull-Rom anterior sobrepasaba sus propios puntos: hundía la
@@ -4917,6 +4986,7 @@ html.js.modo-recorrido #pie{ display:none; }
     colocarTestimonios(mundo);
     despejarTestimonios(mundo);
     resolverSolapes(mundo);
+    repartirSombras(mundo);
 
     // Polvo en suspensión, denso donde la luz lo revela
     var np = 2200, pos = new Float32Array(np * 3), tam = new Float32Array(np);
@@ -5085,7 +5155,15 @@ html.js.modo-recorrido #pie{ display:none; }
        sólo su intensidad: los shaders no se recompilan. */
     ambiente += (objetivo.amb - ambiente) * 0.04;
     luzCielo.intensity = 0.26 * ambiente;
-    luzRasante.intensity = 0.22 * ambiente;
+    luzRasante.intensity = 0.30 * ambiente;
+
+    /* El volumen de sombra ortográfico acompaña al visitante. Cubrir las
+       doce salas de una vez exigiría un mapa gigantesco con una resolución
+       ridícula por metro; siguiendo a la cámara, 2048 píxeles se reparten
+       sobre una sola sala y la sombra llega nítida al pie de cada muro. */
+    luzRasante.target.position.set(posCam.x, posCam.y - 6, posCam.z - 16);
+    luzRasante.position.set(posCam.x - 34, posCam.y + 30, posCam.z + 2);
+    luzRasante.target.updateMatrixWorld();
 
     /* Se eligen las cuatro antorchas más próximas y se les asignan las
        cuatro luces del grupo fijo. El parpadeo es lento y suave: antes
@@ -5158,11 +5236,12 @@ html.js.modo-recorrido #pie{ display:none; }
         riz.offset.y = (ahora * 0.0000072) % 1;
       }
     }
-    /* La sombra de una luz puntual es un cubemap: seis renderizados de
-       la escena entera. Cada 3 fotogramas eran 120 renderizados extra por
-       segundo. En marcha la escena cambia y hay que refrescarla; parado,
-       la sombra ya es correcta y no hace falta tocarla. */
-    if (viajando ? (cuadro % 10 === 0) : (cuadro % 60 === 0)) {
+    /* Ahora la única sombra es la direccional: UN renderizado ortográfico,
+       no los seis del cubemap anterior. Como su volumen viaja con la
+       cámara, en marcha hay que rehacerla cada fotograma o la sombra se
+       queda atrás del objeto que la proyecta. Parado no cambia nada, y un
+       refresco por segundo basta para el parpadeo de las antorchas. */
+    if (viajando || cuadro % 60 === 0) {
       render.shadowMap.needsUpdate = true;
     }
 
@@ -5411,14 +5490,47 @@ html.js.modo-recorrido #pie{ display:none; }
   function conectarMandos() {
     var lienzo = document.getElementById('lienzo');
 
+    /* Un gesto de trackpad no es un evento: son decenas, y tras soltar el
+       dedo siguen llegando los de INERCIA durante más de un segundo. Con un
+       simple bloqueo de 260 ms, esa cola volvía a sumar 40 en cuanto se
+       levantaba el bloqueo y disparaba una segunda estación, y a veces una
+       tercera: un solo gesto saltaba dos o más paradas.
+
+       Se detecta el final del gesto en vez de cronometrarlo. Tras avanzar,
+       la rueda queda cerrada hasta que llega un silencio de 220 ms —la
+       inercia agotada—, y cualquier evento que llegue mientras tanto
+       refresca esa espera sin acumular nada. Una pausa de 160 ms entre
+       eventos también empieza gesto nuevo, así que dos golpes deliberados
+       seguidos sí avanzan dos salas. */
+    var ultimoEvento = 0, cerradaHasta = 0;
+
     window.addEventListener('wheel', function (ev) {
       if (!activo || visorAbierto) return;
       ev.preventDefault();
-      // Sólo se separan gestos distintos; no se bloquea durante la marcha
-      if (performance.now() - ultimoPaso < 260) return;
+      var t = performance.now();
+
+      if (cerradaHasta) {
+        cerradaHasta = t + 220;      // sigue llegando inercia: esperar más
+        ultimoEvento = t;
+        return;
+      }
+      if (t - ultimoEvento > 160) acumulado = 0;   // gesto nuevo
+      ultimoEvento = t;
+
       acumulado += ev.deltaY;
-      if (Math.abs(acumulado) > 40) paso(acumulado > 0 ? 1 : -1);
+      if (Math.abs(acumulado) > 64) {
+        paso(acumulado > 0 ? 1 : -1);
+        cerradaHasta = t + 220;
+      }
     }, { passive: false });
+
+    /* La reapertura vive aquí y no en un setTimeout por evento: con cientos
+       de eventos por gesto, serían cientos de temporizadores compitiendo. */
+    window.setInterval(function () {
+      if (cerradaHasta && performance.now() > cerradaHasta) {
+        cerradaHasta = 0; acumulado = 0;
+      }
+    }, 60);
 
     var tocoY = null;
     lienzo.addEventListener('touchstart', function (ev) {
