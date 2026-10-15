@@ -367,7 +367,10 @@ body.mano #lienzo{ cursor:pointer; }
    que hacer scroll. Dos botones lo dicen.
    ============================================================ */
 #pasos{
-  position:fixed; z-index:21; left:50%; bottom:calc(var(--u)*3.4);
+  /* Sube para dejar sitio a la pista bajo ella. Antes compartían franja:
+     los botones, por encima en z, partían la línea de ayuda por la mitad
+     y la dejaban ilegible en todas las estaciones. */
+  position:fixed; z-index:21; left:50%; bottom:calc(var(--u)*5.6);
   transform:translateX(-50%);
   display:none; gap:var(--u);
 }
@@ -513,8 +516,9 @@ html.js.modo-recorrido #controles{ display:flex; }
   /* Estaba abajo a la derecha, la misma esquina que ocupa el panel de
      texto cuando se cambia a ese lado. Se lleva bajo los botones de paso,
      centrada, donde nada compite con ella. */
-  position:fixed; z-index:20; bottom:calc(var(--u)*1.2); left:50%;
-  transform:translateX(-50%);
+  position:fixed; z-index:20; bottom:calc(var(--u)*1.4); left:50%;
+  transform:translateX(-50%); max-width:min(92vw,56ch);
+  overflow:hidden; text-overflow:ellipsis;
   font-family:var(--f-util); font-size:10px; letter-spacing:.18em;
   text-transform:uppercase; color:#BCAF97; display:none;
   white-space:nowrap; pointer-events:none;
@@ -1055,18 +1059,18 @@ html.js.modo-recorrido #pie{ display:none; }
      el espacio: una entrada por cámara del Grundriss.
      ========================================================== */
   var CAMARAS = {
-    'patio-uruk':  { ancho: 16, alto: 7,  techo: true,  fog: 0x77512A, luz: 0xE8A34D, int: 2.0, fov: 55, fondo: 0x1A1208, prop: 'zigurat',   niebla: 0.0193, suelo: 0x6B5335, antorchas: true },
-    'enkidu':      { ancho: 20, alto: 9,  techo: true,  fog: 0x985131, luz: 0xC97B4A, int: 1.8, fov: 55, fondo: 0x201108, prop: 'barro',     niebla: 0.0174, suelo: 0x63432A, antorchas: true },
-    'enkidu-b':    { ancho: 22, alto: 10, techo: true,  fog: 0x986942, luz: 0xD79052, int: 1.7, fov: 56, fondo: 0x241608, prop: 'columnas',  niebla: 0.0154, suelo: 0x6E5336, antorchas: true },
-    'reunion':     { ancho: 30, alto: 12, techo: false, fog: 0xAD7C49, luz: 0xE8B76A, int: 1.9, fov: 58, fondo: 0x2C1E0E, prop: 'espejo',    niebla: 0.0107, suelo: 0x7A5C3A, antorchas: false },
-    'cedros':      { ancho: 34, alto: 34, techo: false, fog: 0x61713B, luz: 0xBFD08A, int: 1.4, fov: 62, fondo: 0x141A0E, prop: 'cedros',    niebla: 0.0093, suelo: 0x3E3A22, antorchas: false },
-    'humbaba':     { ancho: 30, alto: 20, techo: false, fog: 0x757E83, luz: 0x8FA3BC, int: 1.5, fov: 66, fondo: 0x1B2028, prop: 'fractura',  niebla: 0.0107, suelo: 0x4A4A48, antorchas: false },
-    'toro':        { ancho: 28, alto: 14, techo: false, fog: 0xBA8642, luz: 0xF0C169, int: 2.0, fov: 58, fondo: 0x2E2210, prop: 'toro',      niebla: 0.0116, suelo: 0x7C5E38, antorchas: true },
-    'enkidu-ii':   { ancho: 22, alto: 10, techo: true,  fog: 0x353642, luz: 0x4A5470, int: 0.8, fov: 54, fondo: 0x0A0B10, prop: 'vacio',     niebla: 0.0154, suelo: 0x2A2A32, antorchas: false },
-    'mashu':       { ancho: 20, alto: 22, techo: true,  fog: 0x181B26, luz: 0x5A6C9C, int: 1.0, fov: 50, fondo: 0x05060B, prop: 'escorpion', niebla: 0.0174, suelo: 0x1E2029, antorchas: false },
-    'utnapishtim': { ancho: 60, alto: 30, techo: false, fog: 0x2E3A44, luz: 0x7C90A6, int: 0.85, fov: 63, fondo: 0x1B242C, prop: 'agua',      niebla: 0.0128, suelo: 0x39414A, antorchas: false },
-    'ascenso':     { ancho: 26, alto: 16, techo: false, fog: 0xD9B58C, luz: 0xFFD9A4, int: 1.95, fov: 66, fondo: 0xCBA079, prop: 'rampa',     niebla: 0.0040, suelo: 0xA8804E, antorchas: false },
-    'murallas':    { ancho: 70, alto: 40, techo: false, fog: 0xE0B98A, luz: 0xFFD9A0, int: 2.1, fov: 70, fondo: 0xD8A876, prop: 'muralla',   niebla: 0.0020, suelo: 0xB08A55, antorchas: false }
+    'patio-uruk':  { ancho: 16, alto: 7,  techo: true,  fog: 0x77512A, luz: 0xE8A34D, int: 2.0, fov: 55, fondo: 0x1A1208, prop: 'zigurat',   niebla: 0.0193, suelo: 0x6B5335, antorchas: true, amb: 1.00 },
+    'enkidu':      { ancho: 20, alto: 9,  techo: true,  fog: 0x985131, luz: 0xC97B4A, int: 1.8, fov: 55, fondo: 0x201108, prop: 'barro',     niebla: 0.0174, suelo: 0x63432A, antorchas: true, amb: 0.92 },
+    'enkidu-b':    { ancho: 22, alto: 10, techo: true,  fog: 0x986942, luz: 0xD79052, int: 1.7, fov: 56, fondo: 0x241608, prop: 'columnas',  niebla: 0.0154, suelo: 0x6E5336, antorchas: true, amb: 0.95 },
+    'reunion':     { ancho: 30, alto: 12, techo: false, fog: 0xAD7C49, luz: 0xE8B76A, int: 1.9, fov: 58, fondo: 0x2C1E0E, prop: 'espejo',    niebla: 0.0107, suelo: 0x7A5C3A, antorchas: false, amb: 1.05 },
+    'cedros':      { ancho: 34, alto: 34, techo: false, fog: 0x61713B, luz: 0xBFD08A, int: 1.4, fov: 62, fondo: 0x141A0E, prop: 'cedros',    niebla: 0.0093, suelo: 0x3E3A22, antorchas: false, amb: 0.80 },
+    'humbaba':     { ancho: 30, alto: 20, techo: false, fog: 0x757E83, luz: 0x8FA3BC, int: 1.5, fov: 66, fondo: 0x1B2028, prop: 'fractura',  niebla: 0.0107, suelo: 0x4A4A48, antorchas: false, amb: 0.85 },
+    'toro':        { ancho: 28, alto: 14, techo: false, fog: 0xBA8642, luz: 0xF0C169, int: 2.0, fov: 58, fondo: 0x2E2210, prop: 'toro',      niebla: 0.0116, suelo: 0x7C5E38, antorchas: true, amb: 1.05 },
+    'enkidu-ii':   { ancho: 22, alto: 10, techo: true,  fog: 0x353642, luz: 0x4A5470, int: 0.8, fov: 54, fondo: 0x0A0B10, prop: 'vacio',     niebla: 0.0154, suelo: 0x2A2A32, antorchas: false, amb: 0.34 },
+    'mashu':       { ancho: 20, alto: 22, techo: true,  fog: 0x181B26, luz: 0x5A6C9C, int: 1.0, fov: 50, fondo: 0x05060B, prop: 'escorpion', niebla: 0.0174, suelo: 0x1E2029, antorchas: false, amb: 0.30 },
+    'utnapishtim': { ancho: 60, alto: 30, techo: false, fog: 0x2E3A44, luz: 0x7C90A6, int: 0.85, fov: 63, fondo: 0x1B242C, prop: 'agua',      niebla: 0.0128, suelo: 0x39414A, antorchas: false, amb: 0.70 },
+    'ascenso':     { ancho: 26, alto: 16, techo: false, fog: 0xD9B58C, luz: 0xFFD9A4, int: 1.95, fov: 66, fondo: 0xCBA079, prop: 'rampa',     niebla: 0.0040, suelo: 0xA8804E, antorchas: false, amb: 1.30 },
+    'murallas':    { ancho: 70, alto: 40, techo: false, fog: 0xE0B98A, luz: 0xFFD9A0, int: 2.1, fov: 70, fondo: 0xD8A876, prop: 'muralla',   niebla: 0.0020, suelo: 0xB08A55, antorchas: false, amb: 1.45 }
   };
 
   var LAPIS = 0x2456A6;
@@ -1155,8 +1159,11 @@ html.js.modo-recorrido #pie{ display:none; }
   var objetivo = {
     fog: new THREE.Color(0x3A2A18), fondo: new THREE.Color(0x1A1208),
     luz: new THREE.Color(0xE8A34D), suelo: new THREE.Color(0x6B5335),
-    int: 2.0, fov: 55, niebla: 0.03
+    int: 2.0, fov: 55, niebla: 0.03, amb: 1.0
   };
+  /* Nivel de luz ambiental vigente; persigue a objetivo.amb igual que la
+     intensidad de estación persigue a objetivo.int. */
+  var ambiente = 1.0;
 
   /* ==========================================================
      TALLER DE TEXTURAS
@@ -2329,20 +2336,29 @@ html.js.modo-recorrido #pie{ display:none; }
     var est = 7;
     function az() { est = (est * 9301 + 49297) % 233280; return est / 233280; }
 
-    /* Ladrillo vidriado: cada pieza cocida de distinta manera, algunas
-       verdeando. Es la variación pieza a pieza lo que da vida al muro. */
+    /* Ladrillo vidriado: el muro es lapislázuli, no un mosaico. En el
+       original la riqueza viene del VIDRIADO —el brillo húmedo de la
+       superficie— y del relieve, no del contraste entre piezas: los
+       ladrillos de una misma cochura salían casi idénticos.
+
+       La variación de luminosidad se mantiene por debajo de ±13%, y el
+       verdeo ocasional se queda cerca del azul en vez de saltar al cian.
+       Lo que antes era ruido cromático se ha pasado al brillo especular
+       del material (ver materialIshtar). */
     g.fillStyle = '#12346E'; g.fillRect(0, 0, W, H);
     var filas = 26, cols = 7, ah = H / filas, aw = W / cols;
     for (var f = 0; f < filas; f++) {
       var off = (f % 2) * aw / 2;
       for (var c = -1; c <= cols; c++) {
         var x = c * aw + off, y = f * ah;
-        var t = 0.62 + az() * 0.75, verde = az() < 0.18;
-        g.fillStyle = 'rgb(' + (12 * t | 0) + ',' + ((verde ? 60 : 46) * t | 0) +
-                      ',' + ((verde ? 104 : 118) * t | 0) + ')';
+        var t = 0.88 + az() * 0.24, verde = az() < 0.07;
+        g.fillStyle = 'rgb(' + (13 * t | 0) + ',' + ((verde ? 56 : 50) * t | 0) +
+                      ',' + ((verde ? 112 : 120) * t | 0) + ')';
         g.fillRect(x + 1.5, y + 1.5, aw - 3, ah - 3);
-        g.fillStyle = 'rgba(150,195,235,' + (0.04 + az() * 0.086).toFixed(3) + ')';
-        g.fillRect(x + 1.5, y + 1.5, aw - 3, ah * 0.34);
+        /* Reflejo del vidriado en el canto superior: constante, porque es
+           la curvatura de la pieza y no un accidente de cocción. */
+        g.fillStyle = 'rgba(150,195,235,' + (0.07 + az() * 0.030).toFixed(3) + ')';
+        g.fillRect(x + 1.5, y + 1.5, aw - 3, ah * 0.30);
       }
     }
 
@@ -2502,10 +2518,13 @@ html.js.modo-recorrido #pie{ display:none; }
         g.stroke();
       }
     }
-    // piezas perdidas y sales
-    for (var w = 0; w < 80; w++) {
+    /* Piezas perdidas y sales. Eran 80 sobre 182 ladrillos: el 44% del
+       muro quedaba velado de marrón y el azul se perdía bajo el parcheo.
+       Quedan 22, y con menos carga: una ruina puntual sobre el vidriado,
+       no un patrón. */
+    for (var w = 0; w < 22; w++) {
       var wf = az() * filas | 0, wc = az() * cols | 0, wo = (wf % 2) * aw / 2;
-      g.fillStyle = 'rgba(70,60,48,' + (0.20 + az() * 0.31).toFixed(2) + ')';
+      g.fillStyle = 'rgba(74,64,52,' + (0.11 + az() * 0.17).toFixed(2) + ')';
       g.fillRect(wc * aw + wo + 2, wf * ah + 2, aw - 4, ah - 4);
     }
 
@@ -2526,7 +2545,7 @@ html.js.modo-recorrido #pie{ display:none; }
     c.wrapS = c.wrapT = THREE.RepeatWrapping;
     c.repeat.set(0.6, 0.35);
     materialAlmena.cache = romperTileado(new THREE.MeshStandardMaterial({
-      map: c, color: 0x6E86B4, roughness: 0.30, metalness: 0.14, envMapIntensity: 0.6
+      map: c, color: 0x5C76A8, roughness: 0.24, metalness: 0.16, envMapIntensity: 0.82
     }));
     return materialAlmena.cache;
   }
@@ -2536,9 +2555,13 @@ html.js.modo-recorrido #pie{ display:none; }
     var c = m.clone(); c.needsUpdate = true;
     c.wrapS = c.wrapT = THREE.RepeatWrapping;
     c.repeat.set(ru, rv);
+    /* La varianza que se quitó de la textura se devuelve aquí: el
+       vidriado es una capa de sílice fundida, casi un esmalte. Menos
+       rugosidad y más entorno dan el brillo húmedo que hace rico al
+       muro sin ensuciar el color. */
     return romperTileado(new THREE.MeshStandardMaterial({
-      map: c, roughness: 0.28, metalness: 0.16,
-      envMapIntensity: 0.55,
+      map: c, roughness: 0.21, metalness: 0.18,
+      envMapIntensity: 0.88,
       emissive: 0x000000, emissiveIntensity: 0
     }));
   }
@@ -2922,15 +2945,22 @@ html.js.modo-recorrido #pie{ display:none; }
        un puñado de masas grandes da parallax sin ruido. */
     /* El perfil principal se retira: junto a los últimos torreones parecía
        una masa continua, sin terreno ni aire que separasen muralla y ciudad. */
-    var horizonte = z0 - 310;
+    /* El horizonte estaba a 310 unidades de la parada final. A esa
+       distancia la niebla lo borraba casi por completo y el perfil, aun
+       midiendo 620 de ancho, ocupaba una franja angular pequeña: desde la
+       cima sólo se veía bruma. Se acerca a 260 —la ciudad gana un 19% de
+       tamaño angular sin meterse dentro del adarve, donde a 185 se leía
+       como un muro gris al final del paso— y se baja su centro, porque
+       colgaba por encima de la línea de visión. */
+    var horizonte = z0 - 260;
     var tex = texturaSkylineUruk();
     var piel = new THREE.Mesh(
-      new THREE.PlaneGeometry(620, 170),
+      new THREE.PlaneGeometry(600, 164),
       new THREE.MeshBasicMaterial({
         map: tex, transparent: true, depthWrite: false, fog: true
       })
     );
-    piel.position.set(-28, base + 55, horizonte);
+    piel.position.set(-20, base + 42, horizonte);
     piel.userData.estructura = true;
     grupo.add(piel);
 
@@ -2949,9 +2979,15 @@ html.js.modo-recorrido #pie{ display:none; }
     var capas = [
       /* El último lienzo termina a z0-57. La primera vivienda empieza más
          allá de z0-84: una franja de 27 unidades devuelve profundidad. */
-      { n: 64,  zMin: 84,  zRango: 64,  xMin: 24, xRango: 70,  hMin: 4.2, hRango: 9.5, color: 0xA78961, niebla: 0.36 },
-      { n: 104, zMin: 142, zRango: 96,  xMin: 18, xRango: 120, hMin: 3.4, hRango: 10.5, color: 0x987A58, niebla: 0.28 },
-      { n: 176, zMin: 222, zRango: 110, xMin: 12, xRango: 178, hMin: 2.8, hRango: 9, color: 0x846B50, niebla: 0.20 }
+      /* Los tres estratos se acercan en la misma proporción que el
+         horizonte: la trama urbana empieza antes y se lee como barrio,
+         no como grano lejano bajo la bruma. Los dos primeros estratos
+         crecen un poco en altura para que asomen por encima de la
+         coronación del parapeto, que es lo que el visitante tiene
+         delante al mirar desde la cima. */
+      { n: 64,  zMin: 66,  zRango: 52,  xMin: 22, xRango: 66,  hMin: 5.0, hRango: 10.5, color: 0xA78961, niebla: 0.36 },
+      { n: 104, zMin: 112, zRango: 78,  xMin: 17, xRango: 112, hMin: 4.0, hRango: 11.0, color: 0x987A58, niebla: 0.28 },
+      { n: 176, zMin: 176, zRango: 92,  xMin: 12, xRango: 168, hMin: 2.8, hRango: 9, color: 0x846B50, niebla: 0.20 }
     ];
     var dummyC = new THREE.Object3D();
     capas.forEach(function (cp, capaIdx) {
@@ -4963,7 +4999,21 @@ html.js.modo-recorrido #pie{ display:none; }
     if (!activo) return;
     cuadro++;
     var ahora = performance.now();
+    /* Dos relojes distintos, a propósito.
+
+       `dt` se capa corto porque gobierna animaciones cíclicas —lluvia,
+       olas, parpadeo— donde un salto grande tras una pausa se ve como un
+       tirón.
+
+       `dtViaje` usa el tiempo real, capado mucho más tarde, porque
+       gobierna el AVANCE DE LA CÁMARA. Con el cap corto, la amortiguación
+       se aplicaba por fotograma: a 15 fps cada fotograma real de 0,066 s
+       contaba como 0,05, y el viaje entre salas duraba un tercio más de lo
+       debido. Cuanto peor el equipo, más larga la espera y más tiempo
+       pasaba el texto apartado en su estado «en marcha». El recorrido se
+       sentía pesado justo donde ya iba justo de recursos. */
     var dt = Math.min(0.05, (ahora - (animar.previo || ahora)) / 1000);
+    var dtViaje = Math.min(0.25, (ahora - (animar.previo || ahora)) / 1000);
     animar.previo = ahora;
 
     /* La cámara persigue el destino con amortiguación, no con una
@@ -4975,8 +5025,8 @@ html.js.modo-recorrido #pie{ display:none; }
       viaje = destinoIdx; viajando = false;
     } else {
       viajando = true;
-      var avance = resto * (1 - Math.pow(0.0006, dt));   // ~0.2 s de constante
-      var tope = 5.5 * dt;                               // salas por segundo
+      var avance = resto * (1 - Math.pow(0.0006, dtViaje));  // ~0.2 s de constante
+      var tope = 5.5 * dtViaje;                              // salas por segundo
       if (avance > tope) avance = tope;
       if (avance < -tope) avance = -tope;
       viaje += avance;
@@ -5021,6 +5071,21 @@ html.js.modo-recorrido #pie{ display:none; }
     luzEstacion.position.set(posCam.x + 2, posCam.y + 6, posCam.z - 14);
     luzCielo.color.lerp(objetivo.luz, 0.04);
     luzCielo.groundColor.lerp(objetivo.suelo, 0.04);
+
+    /* La luz ambiental también viaja. Antes la hemisférica y la rasante
+       tenían intensidad FIJA (0.26 y 0.22): entre las dos aportaban medio
+       punto de luz plana en todas las salas, pasara lo que pasara con la
+       luz de estación. En la cámara vacía de Enkidu, donde la estación cae
+       a 0.8, ese suelo constante se comía la penumbra y la sala se leía
+       tan iluminada como el patio de Uruk: la rima espacial entre la
+       cámara llena y la misma cámara vacía —el centro emocional del
+       recorrido— no llegaba a producirse.
+
+       `amb` es el multiplicador por cámara. No cambia el NÚMERO de luces,
+       sólo su intensidad: los shaders no se recompilan. */
+    ambiente += (objetivo.amb - ambiente) * 0.04;
+    luzCielo.intensity = 0.26 * ambiente;
+    luzRasante.intensity = 0.22 * ambiente;
 
     /* Se eligen las cuatro antorchas más próximas y se les asignan las
        cuatro luces del grupo fijo. El parpadeo es lento y suave: antes
@@ -5158,6 +5223,7 @@ html.js.modo-recorrido #pie{ display:none; }
     objetivo.luz.set(e.cfg.luz);
     objetivo.suelo.set(e.cfg.suelo);
     objetivo.int = e.cfg.int;
+    objetivo.amb = (e.cfg.amb === undefined) ? 1.0 : e.cfg.amb;
     objetivo.fov = e.cfg.fov;
     objetivo.niebla = e.cfg.niebla;
     asegurarTexturas(i);

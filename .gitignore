@@ -7,3 +7,7 @@ __pycache__/
 firebase-debug.log
 firebase-debug.*.log
 node_modules/
+
+# andamiaje local de pruebas de render
+.render/
+prueba-render.html
