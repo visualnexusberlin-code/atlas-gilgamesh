@@ -2958,18 +2958,29 @@ html.js.modo-recorrido #pie{ display:none; }
     boveda.rotation.z = Math.PI / 2;          // el eje del cilindro al eje del paso
     boveda.rotation.y = Math.PI / 2;
     boveda.position.set(0, sueloZP + arranqueArco, zPaso);
-    /* Se ve desde dentro del cañón, de modo que la cara útil es la interior. */
-    boveda.material = matAzulCorto.clone();
+    /* Se ve desde dentro del cañón, de modo que la cara útil es la
+       interior. Y necesita SU PROPIA escala de textura: un mapa con
+       repetición 1 estirado sobre dieciocho unidades de fondo y diecisiete
+       de desarrollo dejaba el intradós como una superficie gris lisa, sin
+       ladrillo. Se calcula por el tamaño del cañón. */
+    boveda.material = materialIshtar('ladrillo',
+      Math.max(2, Math.round((fondoPaso + 2) / 5.5)),
+      Math.max(2, Math.round((Math.PI * (radio + 0.4)) / 5.5)));
     boveda.material.side = THREE.BackSide;
+    boveda.material.color = new THREE.Color(0xBCC9DE);   // el intradós recibe menos luz directa
     boveda.castShadow = false; boveda.receiveShadow = true;
     boveda.userData.estructura = true;
     grupo.add(boveda);
 
-    /* Cerramiento sobre la bóveda: sin él, la franja entre el extradós y el
-       paño central seguía abierta al cielo vista en escorzo. */
+    /* Cerramiento sobre la bóveda. Estaba a la altura de la CLAVE —arranque
+       más radio más 0,45— es decir, dentro del anillo de la archivolta, y
+       con 18 de fondo rebasaba en una unidad el plano de la fachada. El
+       resultado era una banda horizontal que cruzaba el arco por delante y
+       lo partía en dos. Sube por encima del extradós y se recorta para
+       quedar detrás del frente: cierra la franja sin tocar la portada. */
     var enjuta = new THREE.Mesh(
-      new THREE.BoxGeometry((radio + 1.75) * 2, 0.9, fondoPaso + 2.0), matAzulCorto);
-    enjuta.position.set(0, sueloZP + arranqueArco + radio + 0.45, zPaso);
+      new THREE.BoxGeometry((radio + 1.55) * 2, 0.9, fondoPaso - 1.5), matAzulCorto);
+    enjuta.position.set(0, sueloZP + arranqueArco + radio + 2.25, zPaso - 1.4);
     registrar(enjuta);
 
     /* Archivolta trasera: la puerta tiene dos caras. Quien la cruza y mira
@@ -4024,7 +4035,7 @@ html.js.modo-recorrido #pie{ display:none; }
             var zA = zFinLienzo + largoA * (ta2 + 0.5);
             // altura del recorrido en ese punto, para coronar siempre igual
             var yA = alturaEnZ(zA) - OJO;
-            var hSeg = yA + 3.0 + 3.5;
+            var hSeg = yA + 2.6 + 3.5;
             var seg = new THREE.Mesh(
               new THREE.BoxGeometry(2.2, hSeg, largoA + 0.3),
               materialIshtar('friso', Math.max(1, Math.round(largoA / 10)),
@@ -4039,14 +4050,6 @@ html.js.modo-recorrido #pie{ display:none; }
             muroDeNichos(grupo, materialIshtar('ladrillo', 1, 1),
                          sg2 * (14.2 - sg2 * 1.1), -3.5 + hSeg * 0.52, zA,
                          largoA - 0.4, hSeg * 0.86, 0.30, 2.0, -sg2);
-            /* La vía procesional usa una cornisa apoyada y continua. La
-               sucesión de almenas se superponía en perspectiva como una
-               escalera suspendida y competía con la silueta de la puerta. */
-            var tapaUnion = new THREE.Mesh(
-              new THREE.BoxGeometry(2.75, 0.58, largoA + 0.35), matAlmA);
-            tapaUnion.position.set(sg2 * 14.2, yA + 3.29, zA);
-            tapaUnion.castShadow = true; tapaUnion.userData.estructura = true;
-            grupo.add(tapaUnion);
           }
 
           // Contrafuertes cada 9, a lo largo de todo el lienzo prolongado
@@ -4054,7 +4057,7 @@ html.js.modo-recorrido #pie{ display:none; }
           for (var cc = 0; cc < nCnt; cc++) {
             var ccz = zFinLienzo + 6 + cc * 9;
             var yC2 = alturaEnZ(ccz) - OJO;
-            var hCnt = yC2 + 3.0 + 3.5;
+            var hCnt = yC2 + 2.6 + 3.5;
             var cnt = new THREE.Mesh(
               new THREE.BoxGeometry(2.8, hCnt, 4.6),
               materialIshtar('friso', 1, Math.max(1, Math.round(hCnt / 10)))
@@ -4063,11 +4066,52 @@ html.js.modo-recorrido #pie{ display:none; }
             cnt.castShadow = true;
             cnt.userData.estructura = true;
             grupo.add(cnt);
-            var tapaCnt = new THREE.Mesh(new THREE.BoxGeometry(3.4, 0.58, 4.9), matAlmA);
-            tapaCnt.position.set(sg2 * 13.5, yC2 + 3.29, ccz);
-            tapaCnt.castShadow = true; tapaCnt.userData.estructura = true;
-            grupo.add(tapaCnt);
           }
+          /* CORNISA CONTINUA.
+             Cada tramo de muro tenía su propia tapa, con la altura del
+             CENTRO del tramo: once unidades y media de coronación
+             horizontal mientras el suelo sube sin parar. En cada unión
+             aparecía un escalón de dos unidades y media, y eso es lo que
+             asomaba por encima de la escalinata, delatando el despiece.
+
+             Una sola tira por lado, cuyos vértices siguen `alturaEnZ` igual
+             que lo hace la pasarela, corona el lienzo sin un solo salto. Se
+             sitúa por encima del punto más alto que pueda alcanzar
+             cualquier paño, de modo que siempre los cubre. */
+          (function () {
+            var vC = [], uC = [], iC = [], N_COR = 56;
+            for (var q = 0; q <= N_COR; q++) {
+              var zq = zFinLienzo + largoLienzo * (q / N_COR);
+              var yq = alturaEnZ(zq) - OJO + 4.2;
+              vC.push(sg2 * 13.0, yq, zq,  sg2 * 15.7, yq, zq);
+              uC.push(0, zq / 7.0, 1, zq / 7.0);
+              if (q < N_COR) { var aq = q * 2; iC.push(aq, aq+1, aq+2, aq+1, aq+3, aq+2); }
+            }
+            var gC = new THREE.BufferGeometry();
+            gC.setAttribute('position', new THREE.Float32BufferAttribute(vC, 3));
+            gC.setAttribute('uv', new THREE.Float32BufferAttribute(uC, 2));
+            gC.setIndex(iC); gC.computeVertexNormals();
+            var corn = new THREE.Mesh(gC, materialAlmena());
+            corn.castShadow = true; corn.receiveShadow = true;
+            corn.userData.estructura = true;
+            corn.userData.planar = true;
+            grupo.add(corn);
+            /* Canto de la cornisa: sin él, vista desde abajo era una lámina. */
+            var vF = [], iF = [];
+            for (var q2 = 0; q2 <= N_COR; q2++) {
+              var zf = zFinLienzo + largoLienzo * (q2 / N_COR);
+              var yf = alturaEnZ(zf) - OJO + 4.2;
+              vF.push(sg2 * 13.0, yf, zf,  sg2 * 13.0, yf - 0.62, zf);
+              if (q2 < N_COR) { var af = q2 * 2; iF.push(af, af+1, af+2, af+1, af+3, af+2); }
+            }
+            var gF = new THREE.BufferGeometry();
+            gF.setAttribute('position', new THREE.Float32BufferAttribute(vF, 3));
+            gF.setIndex(iF); gF.computeVertexNormals();
+            var mF = materialAlmena().clone(); mF.side = THREE.DoubleSide;
+            var canto = new THREE.Mesh(gF, mF);
+            canto.userData.estructura = true; canto.userData.planar = true;
+            grupo.add(canto);
+          })();
         });
 
         /* RETORNO DE LA MURALLA HACIA EL DILUVIO
