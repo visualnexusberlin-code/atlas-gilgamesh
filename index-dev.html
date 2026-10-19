@@ -216,7 +216,9 @@ html.js.modo-recorrido #pista{ display:block; }
    nunca cubre el muro donde cuelga la pieza. Los relieves se alternan de
    lado; el panel los sigue como una sombra en espejo. */
 #panel.a-derecha{
-  left:auto; right:calc(var(--u)*10);
+  /* A 10u del borde se metía bajo la espina de estaciones, que vive a 4u:
+     las cuñas caían sobre el texto y la caja parecía cortada. */
+  left:auto; right:calc(var(--u)*13);
   border-left:0; border-right:2px solid var(--lapis);
 }
 html.js.modo-recorrido #panel{ display:block; }
@@ -228,10 +230,15 @@ html.js.modo-recorrido #panel{ display:block; }
   gap:calc(var(--u)*2); margin-bottom:calc(var(--u)*1.5);
 }
 #panel .marca{
-  display:flex; align-items:center; gap:var(--u);
-  font-family:var(--f-util); font-size:11px; letter-spacing:.22em;
-  text-transform:uppercase; color:#C4A67C;
+  /* «ESTACIÓN XII · CIMA DE LAS MURALLAS» no cabía en una línea y se
+     partía por la mitad, de modo que la cabecera se leía cortada. Se
+     reduce el interletrado y se permite que fluya en dos líneas con su
+     propio interlineado, en vez de romperse contra el borde. */
+  display:flex; align-items:flex-start; gap:var(--u);
+  font-family:var(--f-util); font-size:10.5px; letter-spacing:.16em;
+  line-height:1.5; text-transform:uppercase; color:#C4A67C;
 }
+#panel .marca .cuna{ flex:0 0 auto; margin-top:.42em; }
 #btn-plegar{
   background:none; border:0; cursor:pointer; padding:4px 6px;
   color:#8C7F6C; font-family:var(--f-util); font-size:14px; line-height:1;
@@ -2699,10 +2706,18 @@ html.js.modo-recorrido #pie{ display:none; }
        laterales recortaba cuerpos y estiraba registros al mirar la puerta
        en escorzo, especialmente desde la izquierda. */
     var materialesTorre = [matAzul, matAzul, matAzul, matAzul, matBestias, matAzul];
-    /* Las alas son transición hacia la muralla fantástica, no parte del
-       programa figurativo principal. El atlas de animales se recortaba en
-       sus paños cortos y, en escorzo, parecía un error de tileado. */
-    var materialesAla = [matAzul, matAzul, matAzul, matAzul, matAzul, matAzul];
+    /* Las alas llevaban ladrillo liso en las seis caras. Pegadas a unas
+       torres cubiertas de uros y dragones, producían un corte seco: el
+       programa figurativo se interrumpía a media fachada y por debajo de
+       esa línea sólo quedaba ladrillo. Era el defecto que más delataba el
+       decorado.
+
+       Reciben ahora su propio registro en la cara frontal, con un atlas
+       ajustado a su paño —más corto y más bajo que el de las torres— para
+       que los cuerpos no se recorten. La banda de animales recorre así la
+       fachada entera, que es como corre en el original. */
+    var matBestiasAla = materialIshtar('bestias', 1.0, 1.0);
+    var materialesAla = [matAzul, matAzul, matAzul, matAzul, matBestiasAla, matAzul];
 
     function registrar(m) {
       m.castShadow = true; m.receiveShadow = true;
@@ -2837,6 +2852,47 @@ html.js.modo-recorrido #pie{ display:none; }
       paredPaso.position.set(sg * (radio + 0.42), sueloZP + arranqueArco / 2, zP - 3.0);
       registrar(paredPaso);
     });
+
+    /* EL INTRADÓS: LA BÓVEDA DEL PASO
+       La archivolta es un anillo PLANO aplicado a la fachada, y el paso
+       tenía sus dos paredes laterales pero ningún techo. Al mirar por el
+       vano, por encima del aro frontal no había nada: se veía el cielo por
+       detrás, y el borde inferior del paño central cortaba la vista con una
+       línea horizontal seca. El arco existía sólo de frente, como un
+       decorado de teatro visto desde bastidores.
+
+       Un medio cañón cierra el paso de extremo a extremo. Es la pieza que
+       convierte la fachada en puerta: desde fuera da profundidad al vano, y
+       al cruzarlo se pasa de verdad por debajo de una bóveda. */
+    var fondoPaso = 16.0, zPaso = zP - 3.0;
+    var boveda = new THREE.Mesh(
+      new THREE.CylinderGeometry(radio + 0.40, radio + 0.40, fondoPaso + 2.0,
+                                 40, 1, true, 0, Math.PI),
+      matAzulCorto);
+    boveda.rotation.z = Math.PI / 2;          // el eje del cilindro al eje del paso
+    boveda.rotation.y = Math.PI / 2;
+    boveda.position.set(0, sueloZP + arranqueArco, zPaso);
+    /* Se ve desde dentro del cañón, de modo que la cara útil es la interior. */
+    boveda.material = matAzulCorto.clone();
+    boveda.material.side = THREE.BackSide;
+    boveda.castShadow = false; boveda.receiveShadow = true;
+    boveda.userData.estructura = true;
+    grupo.add(boveda);
+
+    /* Cerramiento sobre la bóveda: sin él, la franja entre el extradós y el
+       paño central seguía abierta al cielo vista en escorzo. */
+    var enjuta = new THREE.Mesh(
+      new THREE.BoxGeometry((radio + 1.75) * 2, 0.9, fondoPaso + 2.0), matAzulCorto);
+    enjuta.position.set(0, sueloZP + arranqueArco + radio + 0.45, zPaso);
+    registrar(enjuta);
+
+    /* Archivolta trasera: la puerta tiene dos caras. Quien la cruza y mira
+       atrás veía el anillo por su reverso, sin relieve. */
+    var aroTrasero = new THREE.Mesh(
+      new THREE.RingGeometry(radio, radio + 1.7, 48, 1, 0, Math.PI), matArco);
+    aroTrasero.position.set(0, sueloZP + arranqueArco, zPaso - fondoPaso / 2 - 0.9);
+    aroTrasero.rotation.y = Math.PI;
+    aroTrasero.userData.estructura = true; grupo.add(aroTrasero);
 
     var geoRoseta = new THREE.CylinderGeometry(0.34, 0.34, 0.18, 14);
     var rosetas = new THREE.InstancedMesh(geoRoseta, matMarfil, 27);
@@ -4480,10 +4536,36 @@ html.js.modo-recorrido #pie{ display:none; }
   var materialPavimentoUrukCache = null;
   function materialPavimentoUruk() {
     if (!materialPavimentoUrukCache) {
+      /* El pavimento de la cima era COLOR PLANO: ni textura, ni relieve, ni
+         junta. Las losas se separaban 0,10 unidades y por ese hueco se veía
+         el ladrillo vidriado de debajo, de modo que la coronación aparecía
+         recorrida por una retícula azul. Dos cosas a la vez: un suelo sin
+         materia y unas juntas que enseñaban lo que no debían.
+
+         Ahora lleva la caliza del resto del conjunto, y la junta se TALLA en
+         el borde de cada losa en lugar de dejarse como vacío: las UV de la
+         instancia van de 0 a 1 por pieza, así que el borde se oscurece y se
+         hunde con el mismo degradado con que lo haría el mortero. Las losas
+         pasan a tocarse y el hueco desaparece. */
+      var m = MATERIALES.caliza;
       materialPavimentoUrukCache = new THREE.MeshStandardMaterial({
-        color: 0xB8A17B, roughness: 0.96, metalness: 0, envMapIntensity: 0.18,
+        color: 0xB8A17B, roughness: 0.94, metalness: 0, envMapIntensity: 0.18,
+        map: tex(m.color, 1, 1),
+        normalMap: tex(m.normal, 1, 1),
+        roughnessMap: tex(m.rug, 1, 1),
         transparent: true, opacity: 0, depthWrite: false
       });
+      /* La varying de UV en r128 se llama vUv. */
+      materialPavimentoUrukCache.onBeforeCompile = function (sh) {
+        sh.fragmentShader = sh.fragmentShader
+          .replace('#include <map_fragment>', [
+            '#include <map_fragment>',
+            'float _b = min(min(vUv.x, 1.0 - vUv.x), min(vUv.y, 1.0 - vUv.y));',
+            'float _junta = smoothstep(0.0, 0.055, _b);',
+            'diffuseColor.rgb = mix(diffuseColor.rgb * vec3(0.42, 0.40, 0.37),',
+            '                       diffuseColor.rgb, _junta);'
+          ].join('\n'));
+      };
     }
     return materialPavimentoUrukCache;
   }
@@ -4492,7 +4574,7 @@ html.js.modo-recorrido #pie{ display:none; }
     /* Losas físicas, no una imagen estirada: las juntas siguen siendo
        legibles en perspectiva y ninguna mancha puede delatar una repetición.
        Todas comparten geometría y material en un solo InstancedMesh. */
-    var ANCHO = 25.5, J = 0.10, estado = 1947, piezas = [];
+    var ANCHO = 25.5, J = 0.012, estado = 1947, piezas = [];
     function azar() { estado = (estado * 9301 + 49297) % 233280; return estado / 233280; }
     var dir = zFin >= zInicio ? 1 : -1, z = zInicio;
     while ((dir > 0 && z < zFin) || (dir < 0 && z > zFin)) {
@@ -4565,6 +4647,21 @@ html.js.modo-recorrido #pie{ display:none; }
        negro. El suelo estaba, pero era invisible. */
     matSuelo.vertexColors = false;
     matBorde.vertexColors = false;
+    /* LOS DOS FALDONES SE CONSTRUYEN ESPEJADOS SIN INVERTIR EL DEVANADO.
+       La tira se genera con el mismo orden de índices para sg=-1 y sg=+1,
+       de modo que sus normales apuntan al mismo lado del mundo: una mira
+       hacia el paso y la otra hacia fuera. El motor descarta las caras
+       traseras, así que uno de los dos muros perdía su cara vertical y
+       dejaba ver el agua a través de él. Parecía geometría a medio
+       construir, y en la sección del Diluvio es justo lo que se veía.
+
+       Se dibujan las dos caras en lugar de rehacer el devanado: la tira no
+       tiene espesor, su cara interior y su exterior son la misma lámina, y
+       ambas deben verse. */
+    matBorde.side = THREE.DoubleSide;
+    /* El suelo NO: se ve siempre desde arriba, y dibujar su cara inferior
+       le invierte la normal en la mitad de los fragmentos, con lo que la
+       cinta se iluminaba plana y perdía su textura. */
     var ANCHO = 26, TRAMOS = 260;
     var z0 = NODOS[0].z + 8, z1 = NODOS[NODOS.length - 1].z - 8;
     var vert = [], uv = [], idx = [], p = new THREE.Vector3();
