@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Gilgamesh — La Memoria de Uruk · build 19/10 11:10 · 5822969</title>
+<title>Gilgamesh — La Memoria de Uruk · build 19/10 11:28 · bb5e25f</title>
 <meta name="description" content="Recorrido interactivo por los doce pasajes de la Epopeya de Gilgamesh: de la tiranía de Uruk al cielo abierto sobre las murallas. Textos, citas y una arquitectura que narra la transformación del héroe.">
 <link rel="canonical" href="https://epic-gilgamesh.web.app/">
 <link rel="alternate" hreflang="es" href="https://epic-gilgamesh.web.app/">
@@ -373,13 +373,42 @@ body.mano #lienzo{ cursor:pointer; }
    El avance no puede depender de que alguien adivine que hay
    que hacer scroll. Dos botones lo dicen.
    ============================================================ */
+/* SONIDO: una esquina, no el centro.
+   Un icono de bocina dibujado en CSS, sin texto ni caja, con el área de
+   pulsación cómoda que pide el tacto. */
+#btn-sonido{
+  position:fixed; z-index:21; right:calc(var(--u)*3); bottom:calc(var(--u)*3);
+  display:none; align-items:center; justify-content:center;
+  width:40px; height:40px; padding:0;
+  background:rgba(12,10,7,.62); backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);
+  border:1px solid rgba(140,106,68,.30); border-radius:50%;
+  cursor:pointer; transition:background .3s, border-color .3s, opacity .3s;
+  opacity:.62;
+}
+html.js.modo-recorrido #btn-sonido{ display:flex; }
+#btn-sonido:hover{ opacity:1; border-color:rgba(201,168,118,.6); }
+.bocina{
+  display:block; width:15px; height:15px; position:relative;
+  background:var(--hueso);
+  clip-path:polygon(0 34%, 32% 34%, 62% 4%, 62% 96%, 32% 66%, 0 66%);
+}
+/* Dos arcos de onda; al silenciar se sustituyen por un aspa. */
+#btn-sonido::after{
+  content:''; position:absolute; right:9px; top:50%;
+  width:7px; height:7px; margin-top:-3.5px;
+  border:1.5px solid var(--hueso); border-left-color:transparent;
+  border-bottom-color:transparent; border-top-color:transparent;
+  border-radius:50%;
+}
+#btn-sonido[aria-pressed="false"] .bocina{ opacity:.45; }
+#btn-sonido[aria-pressed="false"]::after{
+  border:0; width:13px; height:1.5px; right:4px; margin-top:0;
+  background:#D98A6A; transform:rotate(-45deg);
+}
+
 #pasos{
-  /* Sube para dejar sitio a la pista bajo ella. Antes compartían franja:
-     los botones, por encima en z, partían la línea de ayuda por la mitad
-     y la dejaban ilegible en todas las estaciones. */
-  position:fixed; z-index:21; left:50%; bottom:calc(var(--u)*5.6);
-  transform:translateX(-50%);
-  display:none; gap:var(--u);
+  display:none !important;
 }
 html.js.modo-recorrido #pasos{ display:flex; }
 #pasos button{
@@ -667,11 +696,6 @@ html.js.modo-recorrido #pie{ display:none; }
   }
   #donde-sala{ max-width:34vw; }
   #senal .rotulo{ display:none; }
-  #pasos{
-    bottom:auto; top:calc(var(--u)*6.5); left:50%;
-    transform:translateX(-50%); gap:calc(var(--u)*.75);
-  }
-  #pasos button{ padding:var(--u) calc(var(--u)*1.75); font-size:10px; }
   #espina{ display:none !important; }
   #controles{ left:calc(var(--u)*3); top:calc(var(--u)*5.5); }
   #pista-guia{ display:none !important; }
@@ -701,11 +725,11 @@ html.js.modo-recorrido #pie{ display:none; }
     <button class="puerta puerta--principal" id="btn-recorrido" type="button">Entrar en el recorrido</button>
     <a class="puerta" href="#lectura" id="btn-lectura">Leer el texto</a>
   </div>
-  <p class="aviso-umbral">Recorrido de unos 12 minutos · Se avanza con la rueda, las flechas o el dedo</p>
+  <p class="aviso-umbral">Recorrido de unos 12 minutos · Se avanza pulsando la escena; la rueda lleva atrás</p>
   <!-- SELLO DE VERSIÓN. construir.py lo rellena en cada build. Existe para
        poder distinguir de un vistazo qué archivo se tiene abierto: sin él,
        una copia antigua en Descargas es indistinguible de la recién hecha. -->
-  <p class="sello" id="sello-umbral">build 19/10 11:10 · 5822969</p>
+  <p class="sello" id="sello-umbral">build 19/10 11:28 · bb5e25f</p>
 </section>
 
 <!-- ===================== ESCENARIO 3D ===================== -->
@@ -716,7 +740,7 @@ html.js.modo-recorrido #pie{ display:none; }
 <div id="controles">
   <button type="button" id="btn-salir">Salir del recorrido</button>
   <a href="metodologia">Metodología</a>
-  <span class="sello" id="sello-recorrido">build 19/10 11:10 · 5822969</span>
+  <span class="sello" id="sello-recorrido">build 19/10 11:28 · bb5e25f</span>
 </div>
 
 <nav id="espina" aria-label="Estaciones del recorrido"></nav>
@@ -763,13 +787,15 @@ html.js.modo-recorrido #pie{ display:none; }
   </figure>
 </div>
 
-<div id="pasos">
-  <button type="button" id="btn-antes" aria-label="Estación anterior">‹ Atrás</button>
-  <button type="button" id="btn-luego" aria-label="Estación siguiente">Avanzar ›</button>
-  <button type="button" id="btn-sonido" aria-pressed="true" aria-label="Silenciar el sonido">Sonido</button>
-</div>
+<!-- La botonera central se retira: tres cajas opacas en mitad del cuadro
+     tapaban justo el eje por el que se mira. Avanzar es ahora pulsar la
+     escena; retroceder, rueda o dedo hacia atrás; y el teclado conserva
+     todo el recorrido. El sonido se va a su esquina. -->
+<button type="button" id="btn-sonido" aria-pressed="true" aria-label="Silenciar el sonido">
+  <span class="bocina" aria-hidden="true"></span>
+</button>
 
-<p id="pista-guia">Avanza para continuar</p>
+<p id="pista-guia">Pulsa para avanzar</p>
 <div id="pista"></div>
 
 <!-- ===================== LECTURA / CAPA SEMÁNTICA ===================== -->
@@ -1087,8 +1113,8 @@ html.js.modo-recorrido #pie{ display:none; }
     'enkidu-ii':   { ancho: 22, alto: 10, techo: true,  fog: 0x353642, luz: 0x4A5470, int: 0.8, fov: 54, fondo: 0x0A0B10, prop: 'vacio',     niebla: 0.0154, suelo: 0x2A2A32, antorchas: false, amb: 0.34 },
     'mashu':       { ancho: 20, alto: 22, techo: true,  fog: 0x181B26, luz: 0x5A6C9C, int: 1.0, fov: 50, fondo: 0x05060B, prop: 'escorpion', niebla: 0.0174, suelo: 0x1E2029, antorchas: false, amb: 0.30 },
     'utnapishtim': { ancho: 60, alto: 30, techo: false, fog: 0x2E3A44, luz: 0x7C90A6, int: 0.85, fov: 63, fondo: 0x1B242C, prop: 'agua',      niebla: 0.0128, suelo: 0x39414A, antorchas: false, amb: 0.70 },
-    'ascenso':     { ancho: 26, alto: 16, techo: false, fog: 0xD9B58C, luz: 0xFFD9A4, int: 1.95, fov: 66, fondo: 0xCBA079, prop: 'rampa',     niebla: 0.0040, suelo: 0xA8804E, antorchas: false, amb: 1.30 },
-    'murallas':    { ancho: 70, alto: 40, techo: false, fog: 0xE0B98A, luz: 0xFFD9A0, int: 2.1, fov: 70, fondo: 0xD8A876, prop: 'muralla',   niebla: 0.0020, suelo: 0xB08A55, antorchas: false, amb: 1.45 }
+    'ascenso':     { ancho: 26, alto: 16, techo: false, fog: 0xD9B58C, luz: 0xFFD9A4, int: 1.95, fov: 66, fondo: 0xCBA079, prop: 'rampa',     niebla: 0.0030, suelo: 0xA8804E, antorchas: false, amb: 1.30 },
+    'murallas':    { ancho: 70, alto: 40, techo: false, fog: 0xE0B98A, luz: 0xFFD9A0, int: 2.1, fov: 70, fondo: 0xD8A876, prop: 'muralla',   niebla: 0.0012, suelo: 0xB08A55, antorchas: false, amb: 1.45 }
   };
 
   var LAPIS = 0x2456A6;
@@ -1981,7 +2007,12 @@ html.js.modo-recorrido #pie{ display:none; }
   var PUERTA_Z = null;
   var AGUA = null;
   var CRECIDA = 0;                 // cuánto ha subido el agua, en unidades
-  var CRECIDA_MAX = 1.2;           // techo de la crecida: anega la pasarela
+  /* Techo de la crecida. Estaba en 1,2: el agua subía 0,84 por ENCIMA del
+     paso y lo cubría por completo, de modo que en la sección del Diluvio
+     no se veía rampa ninguna —sólo agua donde debía haber suelo— y el
+     tramo parecía geometría sin construir. Con 0,32 la lámina llega al ras
+     del borde: la amenaza se lee igual, y el camino sigue estando. */
+  var CRECIDA_MAX = 0.32;
   var rizosCache = null, cieloCache = null;
 
   /* Rizado: mapa de normales teselable, suma de ondas cruzadas */
@@ -3057,9 +3088,15 @@ html.js.modo-recorrido #pie{ display:none; }
          crecen un poco en altura para que asomen por encima de la
          coronación del parapeto, que es lo que el visitante tiene
          delante al mirar desde la cima. */
-      { n: 64,  zMin: 66,  zRango: 52,  xMin: 22, xRango: 66,  hMin: 5.0, hRango: 10.5, color: 0x8B6E47, niebla: 0.36 },
-      { n: 104, zMin: 112, zRango: 78,  xMin: 17, xRango: 112, hMin: 4.0, hRango: 11.0, color: 0x7F6444, niebla: 0.28 },
-      { n: 176, zMin: 176, zRango: 92,  xMin: 12, xRango: 168, hMin: 2.8, hRango: 9, color: 0x6F583E, niebla: 0.20 }
+      /* Tres estratos de barrio. Lo que se veía antes era un reguero
+         pálido perdido en la bruma: a esa distancia la niebla clara lava
+         cualquier tono, así que las casas tenían que elegirse MUCHO más
+         oscuras de lo que han de parecer. Se duplica además la población
+         de los dos primeros estratos y se suben sus alturas, porque una
+         ciudad antigua se lee por densidad, no por extensión. */
+      { n: 132, zMin: 58,  zRango: 54,  xMin: 20, xRango: 74,  hMin: 6.0, hRango: 12.5, color: 0x6A5132, niebla: 0.36 },
+      { n: 188, zMin: 104, zRango: 84,  xMin: 16, xRango: 124, hMin: 4.8, hRango: 12.0, color: 0x5E482E, niebla: 0.28 },
+      { n: 232, zMin: 172, zRango: 104, xMin: 12, xRango: 184, hMin: 3.2, hRango: 9.5, color: 0x53402A, niebla: 0.20 }
     ];
     /* EL ZIGURAT DE EANNA
        La ciudad se leía como grano lejano bajo la bruma: desde la
@@ -3070,45 +3107,64 @@ html.js.modo-recorrido #pie{ display:none; }
        cortar el horizonte a la altura de la mirada, y lo bastante cerca
        para que la niebla no lo disuelva. Cinco cuerpos decrecientes y la
        escalinata frontal: la silueta que ordena todo el perfil. */
+    /* LOS HITOS DE URUK
+       Una ciudad no se lee por sus casas sino por lo que sobresale de
+       ellas. Un solo zigurat perdido en la bruma dejaba el horizonte en
+       «montón de cajas»; cuatro masas escalonadas de tamaños distintos,
+       repartidas en profundidad y con sus templos altos de caliza, dan a la
+       vez escala, densidad y antigüedad: lo que se ve desde la coronación
+       no es un edificio, es una capital.
+
+       Los tonos van muy por debajo del cielo del final —que es pálido y
+       cálido— porque a esta distancia la niebla los aclara: si se eligen ya
+       claros, desaparecen. */
     (function () {
-      /* A x=-62 / z-118 caía a 28° del eje: justo detrás del panel de
-         texto, que ocupa el tercio izquierdo de la pantalla. Se aleja
-         manteniendo una silueta grande pero llevándolo a 12° del eje, donde
-         se ve entero; la mayor distancia se compensa con la altura. */
-      var zx = -31, zz = z0 - 205, cuerpos = 6;
-      var anchoBase = 58, fondoBase = 46, altoCuerpo = 8.8;
-      var matZig = superficie('ladrillo', 0x8E6A3E, 3, 1, 1.0);
-      var matRampa = superficie('ladrillo', 0x7A5733, 1, 1, 1.0);
-      for (var k = 0; k < cuerpos; k++) {
-        var merma = k / cuerpos;
-        var an = anchoBase * (1 - merma * 0.62);
-        var fo = fondoBase * (1 - merma * 0.62);
-        var cuerpo = new THREE.Mesh(
-          new THREE.BoxGeometry(an, altoCuerpo, fo, 1, 2, 1), matZig);
-        cuerpo.position.set(zx, SUELO_LLANURA + altoCuerpo * (k + 0.5), zz);
-        cuerpo.castShadow = cuerpo.receiveShadow = true;
-        cuerpo.userData.estructura = true;
-        hornearAO(cuerpo, 'prop');
-        grupo.add(cuerpo);
-      }
-      /* El templo alto: el remate blanco que se veía desde la llanura. */
-      var templo = new THREE.Mesh(
-        new THREE.BoxGeometry(14, 9, 11, 1, 2, 1),
-        superficie('caliza', 0xD8CDB2, 1, 1, 1.0));
-      templo.position.set(zx, SUELO_LLANURA + altoCuerpo * cuerpos + 4.5, zz);
-      templo.castShadow = templo.receiveShadow = true;
-      templo.userData.estructura = true;
-      hornearAO(templo, 'prop');
-      grupo.add(templo);
-      /* Escalinata frontal, inclinada contra la cara que mira al recorrido. */
-      var rampa = new THREE.Mesh(
-        new THREE.BoxGeometry(11, 1.8, altoCuerpo * cuerpos * 1.55), matRampa);
-      rampa.position.set(zx, SUELO_LLANURA + altoCuerpo * cuerpos * 0.5,
-                         zz + fondoBase * 0.5 + 6);
-      rampa.rotation.x = -0.72;
-      rampa.castShadow = rampa.receiveShadow = true;
-      rampa.userData.estructura = true;
-      grupo.add(rampa);
+      var matZig = superficie('ladrillo', 0x7C5A32, 3, 1, 1.0);
+      var matTemplo = superficie('caliza', 0xC2B393, 1, 1, 1.0);
+      var matRampa = superficie('ladrillo', 0x684A2B, 1, 1, 1.0);
+
+      /* x, z (relativo a z0), cuerpos, ancho base, altura de cuerpo, templo */
+      var hitos = [
+        [-31, -205, 6, 58, 8.8, true],    // el de Eanna: domina el perfil
+        [ 46, -258, 5, 44, 7.4, true],    // su réplica al otro lado del eje
+        [-78, -310, 4, 36, 6.6, false],   // más lejos, ya sin remate visible
+        [ 18, -352, 4, 30, 6.0, false]
+      ];
+
+      hitos.forEach(function (hi) {
+        var zx = hi[0], zz = z0 + hi[1], cuerpos = hi[2];
+        var anchoBase = hi[3], fondoBase = anchoBase * 0.79, altoCuerpo = hi[4];
+        for (var k = 0; k < cuerpos; k++) {
+          var merma = k / cuerpos;
+          var an = anchoBase * (1 - merma * 0.62);
+          var fo = fondoBase * (1 - merma * 0.62);
+          var cuerpo = new THREE.Mesh(
+            new THREE.BoxGeometry(an, altoCuerpo, fo, 1, 2, 1), matZig);
+          cuerpo.position.set(zx, SUELO_LLANURA + altoCuerpo * (k + 0.5), zz);
+          cuerpo.castShadow = cuerpo.receiveShadow = true;
+          cuerpo.userData.estructura = true;
+          hornearAO(cuerpo, 'prop');
+          grupo.add(cuerpo);
+        }
+        if (hi[5]) {
+          var templo = new THREE.Mesh(
+            new THREE.BoxGeometry(anchoBase * 0.24, altoCuerpo * 1.05,
+                                  anchoBase * 0.19, 1, 2, 1), matTemplo);
+          templo.position.set(zx, SUELO_LLANURA + altoCuerpo * cuerpos + altoCuerpo * 0.52, zz);
+          templo.castShadow = templo.receiveShadow = true;
+          templo.userData.estructura = true;
+          hornearAO(templo, 'prop');
+          grupo.add(templo);
+        }
+        var rampa = new THREE.Mesh(
+          new THREE.BoxGeometry(anchoBase * 0.19, 1.8, altoCuerpo * cuerpos * 1.55), matRampa);
+        rampa.position.set(zx, SUELO_LLANURA + altoCuerpo * cuerpos * 0.5,
+                           zz + fondoBase * 0.5 + 6);
+        rampa.rotation.x = -0.72;
+        rampa.castShadow = rampa.receiveShadow = true;
+        rampa.userData.estructura = true;
+        grupo.add(rampa);
+      });
     })();
 
     var dummyC = new THREE.Object3D();
@@ -5495,12 +5551,10 @@ html.js.modo-recorrido #pie{ display:none; }
     document.getElementById('donde-num').textContent = ROMANOS[i];
     document.getElementById('donde-total').textContent = 'de ' + ROMANOS[ESTACIONES.length - 1];
     document.getElementById('donde-sala').textContent = e.marca.replace(/^Estación\s+[IVX]+\s*·\s*/, '');
-    document.getElementById('btn-antes').disabled = (i === 0);
-    document.getElementById('btn-luego').disabled = (i === ESTACIONES.length - 1);
     document.getElementById('pista-guia').textContent =
       (i === ESTACIONES.length - 1) ? 'Fin del recorrido'
-      : (e.imagen ? 'Rueda, flechas o «Avanzar» · Pulsa el relieve para verlo'
-                  : 'Rueda, flechas o «Avanzar» para continuar');
+      : (e.imagen ? 'Pulsa para avanzar · Pulsa el relieve para verlo · Rueda atrás para volver'
+                  : 'Pulsa para avanzar · Rueda atrás para volver');
   }
 
   /* ==========================================================
@@ -5631,9 +5685,22 @@ html.js.modo-recorrido #pie{ display:none; }
     });
     canvas.addEventListener('click', function (ev) {
       var d = sondear(ev);
-      if (!d) return;
-      if (d.estacion !== undefined) abrirVisor(d.estacion);
-      else if (d.testimonio !== undefined) abrirTestimonio(d.testimonio);
+      if (d) {
+        if (d.estacion !== undefined) { abrirVisor(d.estacion); return; }
+        if (d.testimonio !== undefined) { abrirTestimonio(d.testimonio); return; }
+      }
+      /* PULSAR LA ESCENA AVANZA.
+         El clic sólo servía para abrir una pieza; en cualquier otro punto
+         no hacía nada, y por eso hacían falta botones. Ahora, pulsar donde
+         no hay obra ni tablilla lleva a la estación siguiente: el gesto
+         más directo posible, sin nada opaco en mitad del cuadro. */
+      paso(1);
+    });
+    /* El cursor anuncia lo que hará el clic: una mano sobre las piezas,
+       una cruz de avance sobre el resto. */
+    canvas.addEventListener('mousemove', function (ev) {
+      canvas.style.cursor = sondear(ev) ? 'pointer'
+        : (destinoIdx < ESTACIONES.length - 1 ? 'e-resize' : 'default');
     });
   }
 
@@ -5718,8 +5785,6 @@ html.js.modo-recorrido #pie{ display:none; }
       this.textContent = sonidoActivo ? 'Sonido' : 'Silencio';
       if (!sonidoActivo) volumenLluvia(0);
     });
-    document.getElementById('btn-antes').addEventListener('click', function () { paso(-1); });
-    document.getElementById('btn-luego').addEventListener('click', function () { paso(1); });
   }
 
   /* ==========================================================
