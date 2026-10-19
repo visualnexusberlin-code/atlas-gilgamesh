@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Gilgamesh — La Memoria de Uruk · build 19/10 12:39 · db9a15b</title>
+<title>Gilgamesh — La Memoria de Uruk · build 19/10 12:53 · 0452a95</title>
 <meta name="description" content="Recorrido interactivo por los doce pasajes de la Epopeya de Gilgamesh: de la tiranía de Uruk al cielo abierto sobre las murallas. Textos, citas y una arquitectura que narra la transformación del héroe.">
 <link rel="canonical" href="https://epic-gilgamesh.web.app/">
 <link rel="alternate" hreflang="es" href="https://epic-gilgamesh.web.app/">
@@ -743,7 +743,7 @@ html.js.modo-recorrido #pie{ display:none; }
   <!-- SELLO DE VERSIÓN. construir.py lo rellena en cada build. Existe para
        poder distinguir de un vistazo qué archivo se tiene abierto: sin él,
        una copia antigua en Descargas es indistinguible de la recién hecha. -->
-  <p class="sello" id="sello-umbral">build 19/10 12:39 · db9a15b</p>
+  <p class="sello" id="sello-umbral">build 19/10 12:53 · 0452a95</p>
 </section>
 
 <!-- ===================== ESCENARIO 3D ===================== -->
@@ -754,7 +754,7 @@ html.js.modo-recorrido #pie{ display:none; }
 <div id="controles">
   <button type="button" id="btn-salir">Salir del recorrido</button>
   <a href="metodologia">Metodología</a>
-  <span class="sello" id="sello-recorrido">build 19/10 12:39 · db9a15b</span>
+  <span class="sello" id="sello-recorrido">build 19/10 12:53 · 0452a95</span>
 </div>
 
 <nav id="espina" aria-label="Estaciones del recorrido"></nav>
@@ -3066,8 +3066,94 @@ html.js.modo-recorrido #pie{ display:none; }
      la llanura, no a la muralla— se referencia aquí y no a `base`. */
   var SUELO_LLANURA = -3.5;
 
+  /* MURO DE NICHOS
+     La firma de la arquitectura de Uruk, y lo que distingue un muro
+     mesopotámico de un prisma: el paño no es liso sino una sucesión de
+     entrantes verticales estrechos, separados por machones del mismo
+     grosor. Bajo luz rasante cada nicho proyecta su franja de sombra, y
+     el muro deja de leerse como una caja para leerse como fábrica.
+
+     Se resuelve con una sola InstancedMesh por paño: cientos de nichos
+     cuestan una llamada de dibujo. El nicho es una caja hundida en la cara
+     del muro, no un hueco real, porque a esta escala la sombra es toda la
+     información que hace falta. */
+  function muroDeNichos(grupo, mat, cx, cy, cz, largo, alto, profundo, paso, signo) {
+    var n = Math.max(2, Math.floor(largo / paso));
+    var anchoNicho = paso * 0.46;
+    var geo = new THREE.BoxGeometry(profundo, alto * 0.82, anchoNicho);
+    var nichos = new THREE.InstancedMesh(geo, mat, n);
+    var d = new THREE.Object3D();
+    for (var i = 0; i < n; i++) {
+      var zN = cz - largo / 2 + paso * (i + 0.5);
+      d.position.set(cx + signo * profundo * 0.5, cy, zN);
+      d.scale.set(1, 1, 1);
+      d.updateMatrix(); nichos.setMatrixAt(i, d.matrix);
+    }
+    nichos.instanceMatrix.needsUpdate = true;
+    nichos.castShadow = true; nichos.receiveShadow = true;
+    nichos.frustumCulled = false;
+    nichos.userData.estructura = true;
+    grupo.add(nichos);
+    return nichos;
+  }
+
   function construirUruk(grupo, base, z0, matMuro, matPiedra) {
     construirLlanura(grupo, base, z0);
+
+    /* EL ÉUFRATES
+       Uruk existe porque existe el río: la ciudad nace de un meandro, y en
+       todas las vistas de la llanura mesopotámica el agua es lo que
+       organiza el territorio. Sin él, los barrios flotaban sobre una
+       superficie indiferente. Una lámina ancha que cruza en diagonal,
+       pasando entre la ciudad y las colinas, con su vega de palmeras. */
+    (function () {
+      var matRio = new THREE.MeshStandardMaterial({
+        color: 0x6E7E78, roughness: 0.16, metalness: 0.48,
+        envMapIntensity: 0.9, fog: true
+      });
+      var rio = new THREE.Mesh(new THREE.PlaneGeometry(760, 46, 1, 1), matRio);
+      rio.rotation.x = -Math.PI / 2;
+      rio.rotation.z = 0.19;
+            /* A z0-268 el río quedaba DENTRO de la trama urbana, que llega hasta
+         ahí, y las casas lo tapaban por completo. Se lleva más allá del
+         último estrato, a la franja libre entre la ciudad y las colinas. */
+      rio.position.set(-70, SUELO_LLANURA + 0.35, z0 - 352);
+      rio.userData.estructura = true;
+      rio.userData.tipoMaterial = 'uruk-rio';
+      grupo.add(rio);
+
+      /* Vega: palmeras a lo largo de la orilla, que es donde crecen. */
+      var matPalm = new THREE.MeshStandardMaterial({ color: 0x4E4A2C, roughness: 1 });
+      var matFronda = new THREE.MeshStandardMaterial({
+        color: 0x56602E, roughness: 1, side: THREE.DoubleSide
+      });
+      var sp = 7717;
+      function azP() { sp = (sp * 9301 + 49297) % 233280; return sp / 233280; }
+      var troncos = new THREE.InstancedMesh(
+        new THREE.CylinderGeometry(0.42, 0.72, 1, 6), matPalm, 46);
+      var frondas = new THREE.InstancedMesh(
+        new THREE.ConeGeometry(3.6, 2.0, 6, 1, true), matFronda, 46);
+      var dp = new THREE.Object3D();
+      for (var i = 0; i < 46; i++) {
+        var t = azP();
+        var px = -70 + (t - 0.5) * 700;
+        var pz = z0 - 352 + px * 0.19 + (azP() - 0.5) * 54 + (azP() < 0.5 ? 30 : -30);
+        var ht = 7 + azP() * 6;
+        dp.position.set(px, SUELO_LLANURA + ht / 2, pz);
+        dp.scale.set(1, ht, 1); dp.rotation.set(0, azP() * 3.14, 0);
+        dp.updateMatrix(); troncos.setMatrixAt(i, dp.matrix);
+        dp.position.set(px, SUELO_LLANURA + ht + 0.4, pz);
+        dp.scale.set(1, 1, 1);
+        dp.updateMatrix(); frondas.setMatrixAt(i, dp.matrix);
+      }
+      troncos.instanceMatrix.needsUpdate = true;
+      frondas.instanceMatrix.needsUpdate = true;
+      troncos.frustumCulled = frondas.frustumCulled = false;
+      troncos.userData.estructura = frondas.userData.estructura = true;
+      troncos.userData.tipoMaterial = 'uruk-palmeras';
+      frondas.userData.tipoMaterial = 'uruk-palmeras';
+      grupo.add(troncos); grupo.add(frondas);
+    })();
 
     /* COLINAS AL FONDO
        Desde el mirador, la ciudad terminaba contra un cielo liso y la
@@ -3228,14 +3314,36 @@ html.js.modo-recorrido #pie{ display:none; }
           hornearAO(templo, 'prop');
           grupo.add(templo);
         }
-        var rampa = new THREE.Mesh(
-          new THREE.BoxGeometry(anchoBase * 0.19, 1.8, altoCuerpo * cuerpos * 1.55), matRampa);
-        rampa.position.set(zx, SUELO_LLANURA + altoCuerpo * cuerpos * 0.5,
-                           zz + fondoBase * 0.5 + 6);
-        rampa.rotation.x = -0.72;
-        rampa.castShadow = rampa.receiveShadow = true;
-        rampa.userData.estructura = true;
-        grupo.add(rampa);
+        /* ESCALINATA TRIPLE
+           El zigurat de Ur —y los de su familia, la que Gilgamesh habría
+           conocido— no sube por una rampa sino por TRES: una perpendicular
+           a la fachada y dos adosadas que convergen con ella en el primer
+           rellano. Es el rasgo que lo distingue de una pirámide escalonada
+           cualquiera, y el que da su silueta a la vista desde lejos. */
+        var alturaTotal = altoCuerpo * cuerpos;
+        var anchoRampa = anchoBase * 0.16;
+        var caraFrontal = zz + fondoBase * 0.5;
+
+        /* La central sale perpendicular a la fachada, hacia el visitante. */
+        var rampaCentral = new THREE.Mesh(
+          new THREE.BoxGeometry(anchoRampa, 1.8, alturaTotal * 1.55), matRampa);
+        rampaCentral.position.set(zx, SUELO_LLANURA + alturaTotal * 0.5, caraFrontal + 6);
+        rampaCentral.rotation.x = -0.72;
+        rampaCentral.castShadow = rampaCentral.receiveShadow = true;
+        rampaCentral.userData.estructura = true;
+        grupo.add(rampaCentral);
+
+        /* Las escalinatas laterales del zigurat de Ur se han probado y
+           retirado: los cuerpos superiores son más estrechos que la base,
+           de modo que cualquier rampa adosada que suba hasta el rellano
+           sobresale de ellos y se lee como un palo clavado en el costado.
+           A esta distancia el detalle no aporta y el defecto sí se ve.
+           Queda la escalinata central, que es la que da la silueta. */
+
+        /* Machones de nichos en el cuerpo bajo: el zigurat tampoco es liso. */
+        muroDeNichos(grupo, matZig, zx, SUELO_LLANURA + altoCuerpo * 0.55,
+                     zz + fondoBase * 0.5, anchoBase * 0.92, altoCuerpo * 0.8,
+                     0.9, anchoBase * 0.085, 1);
       });
     })();
 
@@ -3798,6 +3906,11 @@ html.js.modo-recorrido #pie{ display:none; }
             seg.castShadow = true; seg.receiveShadow = true;
             seg.userData.estructura = true;
             grupo.add(seg);
+            /* El mismo despiece de nichos en la cara interior del lienzo:
+               es el muro que se tiene al lado durante toda la subida. */
+            muroDeNichos(grupo, materialIshtar('ladrillo', 1, 1),
+                         sg2 * (14.2 - sg2 * 1.1), -3.5 + hSeg * 0.52, zA,
+                         largoA - 0.4, hSeg * 0.86, 0.30, 2.0, -sg2);
             /* La vía procesional usa una cornisa apoyada y continua. La
                sucesión de almenas se superponía en perspectiva como una
                escalera suspendida y competía con la silueta de la puerta. */
@@ -3870,6 +3983,12 @@ html.js.modo-recorrido #pie{ display:none; }
           parap.castShadow = true; parap.receiveShadow = true;
           parap.userData.estructura = true;      // el barrido no puede borrarla
           grupo.add(parap);
+          /* Nichos en la cara que mira al adarve: es la que se tiene
+             delante durante todo el tramo final, y lisa se leía como un
+             bloque de color. */
+          muroDeNichos(grupo, materialIshtar('ladrillo', 1, 1),
+                       sgn * (13 - sgn * 1.3), base + 1.15, z0,
+                       PASO + 26, 2.2, 0.34, 2.15, -sgn);
           var matAlmena = materialAlmena();
           // Almenado piramidal continuo: es lo que da escala a la muralla
           for (var m = 0; m < 17; m++) {
@@ -5293,7 +5412,7 @@ html.js.modo-recorrido #pie{ display:none; }
       raiz.traverse(function (o) {
         if (!o.isMesh && !o.isInstancedMesh) return;
         var tipo = o.userData.tipoMaterial || '';
-        var instanciaLejana = /^(uruk-instancias|uruk-colinas|pavimento-uruk)/.test(tipo);
+        var instanciaLejana = /^(uruk-instancias|uruk-colinas|uruk-palmeras|uruk-rio|pavimento-uruk)/.test(tipo);
         /* Las cintas del recorrido —suelo, calzada y faldones— son tiras de
            UNA SOLA CARA construidas a mano, sin espesor. Al darles sombra
            propia se oscurecían enteras: para dibujar el mapa, three.js
