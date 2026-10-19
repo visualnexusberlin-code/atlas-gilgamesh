@@ -12,9 +12,11 @@ el index.html de una sola pieza, que funciona a doble clic sin servidor.
 """
 
 import base64
+import datetime
 import mimetypes
 import pathlib
 import re
+import subprocess
 import sys
 
 RAIZ = pathlib.Path(__file__).parent
@@ -36,10 +38,24 @@ def main():
         sys.exit("No encuentro index-dev.html")
 
     html = ORIGEN.read_text(encoding="utf-8")
+
+    # Sello de versión: sin él, una copia antigua en Descargas es
+    # indistinguible del build recién hecho.
+    try:
+        commit = subprocess.run(["git", "-C", str(RAIZ), "rev-parse", "--short", "HEAD"],
+                                capture_output=True, text=True, timeout=10).stdout.strip()
+    except Exception:
+        commit = ""
+    sello = datetime.datetime.now().strftime("build %d/%m %H:%M")
+    if commit:
+        sello += " · " + commit
+    html = html.replace("{{SELLO}}", sello)
+
     html, n = re.subn(r"\./assets/([\w.\-]+)", incrustar, html)
 
     DESTINO.write_text(html, encoding="utf-8")
     print(f"{n} imágenes incrustadas")
+    print(f"sello: {sello}")
     print(f"{DESTINO.name}: {len(html) // 1024} KB")
 
 

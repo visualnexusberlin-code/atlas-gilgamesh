@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Gilgamesh — La Memoria de Uruk | Recorrido por la epopeya</title>
+<title>Gilgamesh — La Memoria de Uruk · build 19/10 11:10 · 416aaa4</title>
 <meta name="description" content="Recorrido interactivo por los doce pasajes de la Epopeya de Gilgamesh: de la tiranía de Uruk al cielo abierto sobre las murallas. Textos, citas y una arquitectura que narra la transformación del héroe.">
 <link rel="canonical" href="https://epic-gilgamesh.web.app/">
 <link rel="alternate" hreflang="es" href="https://epic-gilgamesh.web.app/">
@@ -519,6 +519,12 @@ html.js.modo-recorrido #controles{ display:flex; }
 }
 #controles button:hover, #controles a:hover{ color:var(--hueso); }
 
+.sello{
+  font-family:var(--f-util); font-size:10px; letter-spacing:.14em;
+  color:#6E6152; margin:calc(var(--u)*2) 0 0;
+}
+#controles .sello{ margin:0; padding:var(--u) 0; opacity:.75; }
+
 #pista-guia{
   /* Estaba abajo a la derecha, la misma esquina que ocupa el panel de
      texto cuando se cambia a ese lado. Se lleva bajo los botones de paso,
@@ -696,6 +702,10 @@ html.js.modo-recorrido #pie{ display:none; }
     <a class="puerta" href="#lectura" id="btn-lectura">Leer el texto</a>
   </div>
   <p class="aviso-umbral">Recorrido de unos 12 minutos · Se avanza con la rueda, las flechas o el dedo</p>
+  <!-- SELLO DE VERSIÓN. construir.py lo rellena en cada build. Existe para
+       poder distinguir de un vistazo qué archivo se tiene abierto: sin él,
+       una copia antigua en Descargas es indistinguible de la recién hecha. -->
+  <p class="sello" id="sello-umbral">build 19/10 11:10 · 416aaa4</p>
 </section>
 
 <!-- ===================== ESCENARIO 3D ===================== -->
@@ -706,6 +716,7 @@ html.js.modo-recorrido #pie{ display:none; }
 <div id="controles">
   <button type="button" id="btn-salir">Salir del recorrido</button>
   <a href="metodologia">Metodología</a>
+  <span class="sello" id="sello-recorrido">build 19/10 11:10 · 416aaa4</span>
 </div>
 
 <nav id="espina" aria-label="Estaciones del recorrido"></nav>
