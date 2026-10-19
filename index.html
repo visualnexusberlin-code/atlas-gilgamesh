@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Gilgamesh — La Memoria de Uruk · build 19/10 11:47 · a76bad8</title>
+<title>Gilgamesh — La Memoria de Uruk · build 19/10 12:39 · db9a15b</title>
 <meta name="description" content="Recorrido interactivo por los doce pasajes de la Epopeya de Gilgamesh: de la tiranía de Uruk al cielo abierto sobre las murallas. Textos, citas y una arquitectura que narra la transformación del héroe.">
 <link rel="canonical" href="https://epic-gilgamesh.web.app/">
 <link rel="alternate" hreflang="es" href="https://epic-gilgamesh.web.app/">
@@ -743,7 +743,7 @@ html.js.modo-recorrido #pie{ display:none; }
   <!-- SELLO DE VERSIÓN. construir.py lo rellena en cada build. Existe para
        poder distinguir de un vistazo qué archivo se tiene abierto: sin él,
        una copia antigua en Descargas es indistinguible de la recién hecha. -->
-  <p class="sello" id="sello-umbral">build 19/10 11:47 · a76bad8</p>
+  <p class="sello" id="sello-umbral">build 19/10 12:39 · db9a15b</p>
 </section>
 
 <!-- ===================== ESCENARIO 3D ===================== -->
@@ -754,7 +754,7 @@ html.js.modo-recorrido #pie{ display:none; }
 <div id="controles">
   <button type="button" id="btn-salir">Salir del recorrido</button>
   <a href="metodologia">Metodología</a>
-  <span class="sello" id="sello-recorrido">build 19/10 11:47 · a76bad8</span>
+  <span class="sello" id="sello-recorrido">build 19/10 12:39 · db9a15b</span>
 </div>
 
 <nav id="espina" aria-label="Estaciones del recorrido"></nav>
@@ -2426,11 +2426,23 @@ html.js.modo-recorrido #pie{ display:none; }
     }
 
     var CU = '#CE9E60', CL = '#ECCC92', OS = '#926430', MEL = '#B27C3A';
-    function poly(x, y, e, pts, col) {
-      g.fillStyle = col; g.beginPath();
+    /* Perfil del bajorrelieve. En el original cada figura está RECORTADA
+       en el muro: entre el animal y el fondo hay una junta en sombra, y es
+       esa línea —no el modelado interno— lo que la hace legible de lejos.
+       Sin ella, al reducirse el atlas sobre un paño de trece unidades, los
+       cuerpos se fundían con el azul y quedaban como manchas pálidas. */
+    var PERFIL = 'rgba(16,30,56,0.85)';
+
+    function poly(x, y, e, pts, col, perfil) {
+      g.beginPath();
       g.moveTo(x + pts[0][0] * e, y + pts[0][1] * e);
       for (var i = 1; i < pts.length; i++) g.lineTo(x + pts[i][0] * e, y + pts[i][1] * e);
-      g.closePath(); g.fill();
+      g.closePath();
+      if (perfil !== false) {
+        g.strokeStyle = PERFIL; g.lineWidth = 5.5;
+        g.lineJoin = 'round'; g.stroke();
+      }
+      g.fillStyle = col; g.fill();
     }
     function leon(x, y, e) {
       var patas = [[-62,44,13],[-40,40,12],[26,40,12],[48,44,13]];
@@ -2467,14 +2479,20 @@ html.js.modo-recorrido #pie{ display:none; }
        simplificados —no ilustraciones arqueológicas—, pero sus perfiles
        hacen que la fachada se reconozca antes de poder leer el detalle. */
     function uro(x, y, e, dir) {
-      var REL = '#B98C52', LUZ = '#D1B174', SOM = '#79522E', PERF = '#52351F';
+      /* Paleta abierta: el ocre claro sube y la sombra baja, porque el
+         esmalte del muro es muy oscuro y una figura de tonos medios se
+         pierde contra él. */
+      var REL = '#C89A5A', LUZ = '#E6CB92', SOM = '#6A452446', PERF = '#3B2614';
+      SOM = '#6A4524';
       g.save(); g.translate(x, y); g.scale(e * (dir || 1), e);
-      g.shadowColor = 'rgba(30,20,10,0.30)'; g.shadowBlur = 5; g.shadowOffsetY = 4;
+      g.shadowColor = 'rgba(14,26,50,0.42)'; g.shadowBlur = 6; g.shadowOffsetY = 5;
       // Cuerpo compacto y cruz alta, más próximo al auroc babilónico.
-      g.fillStyle = REL; g.beginPath();
+      g.beginPath();
       g.moveTo(-86,-21); g.bezierCurveTo(-70,-55,10,-61,57,-39);
       g.bezierCurveTo(77,-29,80,-2,58,11); g.lineTo(-55,13);
-      g.bezierCurveTo(-76,7,-91,-3,-86,-21); g.fill();
+      g.bezierCurveTo(-76,7,-91,-3,-86,-21); g.closePath();
+      g.strokeStyle = PERFIL; g.lineWidth = 6.5; g.lineJoin = 'round'; g.stroke();
+      g.fillStyle = REL; g.fill();
       g.fillStyle = LUZ; g.beginPath();
       g.moveTo(-61,-36); g.bezierCurveTo(-16,-50,30,-46,57,-30);
       g.lineTo(47,-21); g.bezierCurveTo(12,-32,-28,-31,-61,-24); g.fill();
@@ -2557,10 +2575,10 @@ html.js.modo-recorrido #pie{ display:none; }
       }
     }
 
-    if (clave === 'friso') { leon(400, 330, 2.2); leon(400, 790, 2.2); }
+    if (clave === 'friso') { leon(400, 330, 2.5); leon(400, 790, 2.5); }
     if (clave === 'bestias') {
-      uro(270, 300, 1.12, 1); uro(750, 300, 1.12, 1);
-      dragon(270, 800, 1.05, 1); dragon(750, 800, 1.05, 1);
+      uro(272, 296, 1.34, 1); uro(752, 296, 1.34, 1);
+      dragon(272, 798, 1.26, 1); dragon(752, 798, 1.26, 1);
     }
     if (clave !== 'ladrillo') { banda(0, 52); banda(H - 52, 52); }
     if (clave === 'banda') { for (var r2 = 1; r2 < 6; r2++) banda(H * r2 / 6 - 26, 52); }
@@ -3050,6 +3068,46 @@ html.js.modo-recorrido #pie{ display:none; }
 
   function construirUruk(grupo, base, z0, matMuro, matPiedra) {
     construirLlanura(grupo, base, z0);
+
+    /* COLINAS AL FONDO
+       Desde el mirador, la ciudad terminaba contra un cielo liso y la
+       llanura se leía como una mesa. Mesopotamia no es plana en el
+       horizonte: al norte y al este cierran los relieves del Tauro y los
+       Zagros. Tres cadenas muy tendidas, de tonos cada vez más próximos al
+       cielo, dan profundidad y apoyan la silueta urbana sin competir con
+       ella. Son conos achatados: a esa distancia nadie lee un triángulo. */
+    (function () {
+      var matColina = new THREE.MeshStandardMaterial({
+        color: 0x8C7A60, roughness: 1.0, metalness: 0, fog: true
+      });
+      var cadenas = [
+        { z: 430, n: 14, alto: 26, radio: 92, tono: 0x7E6B51, disp: 150 },
+        { z: 560, n: 12, alto: 38, radio: 126, tono: 0x8A775C, disp: 200 },
+        { z: 700, n: 10, alto: 52, radio: 168, tono: 0x96866C, disp: 260 }
+      ];
+      var sem = 50021;
+      function az() { sem = (sem * 9301 + 49297) % 233280; return sem / 233280; }
+      cadenas.forEach(function (ca) {
+        var mat = matColina.clone(); mat.color.setHex(ca.tono);
+        var geo = new THREE.ConeGeometry(1, 1, 9, 1);
+        var cerro = new THREE.InstancedMesh(geo, mat, ca.n);
+        var d = new THREE.Object3D();
+        for (var i = 0; i < ca.n; i++) {
+          var px = (i / (ca.n - 1) - 0.5) * 2 * ca.disp * 2.2 + (az() - 0.5) * 70;
+          var h2 = ca.alto * (0.55 + az() * 0.9);
+          var r2 = ca.radio * (0.62 + az() * 0.8);
+          d.position.set(px, SUELO_LLANURA + h2 / 2 - 4, z0 - ca.z - az() * 60);
+          d.rotation.set(0, az() * 3.14, 0);
+          d.scale.set(r2, h2, r2 * 0.7);
+          d.updateMatrix(); cerro.setMatrixAt(i, d.matrix);
+        }
+        cerro.instanceMatrix.needsUpdate = true;
+        cerro.frustumCulled = false;
+        cerro.userData.estructura = true;
+        cerro.userData.tipoMaterial = 'uruk-colinas';
+        grupo.add(cerro);
+      });
+    })();
 
     /* LA CIUDAD, SUGERIDA
        190 cajas sueltas no se leían como ciudad: eran ruido dentro de
@@ -3706,10 +3764,28 @@ html.js.modo-recorrido #pie{ display:none; }
              fábrica se leía como tres construcciones distintas pegadas.
              Se levanta en tramos que siguen la rampa y coronan al nivel
              del adarve, como una muralla continua. */
+          /* EL LIENZO LLEGABA SÓLO HASTA EL BORDE DE LA RAMPA.
+             Se construía sobre z0 ± (PASO+30)/2, es decir de -792 a -688, y
+             ahí se acababa. Pero la pasarela sigue hacia atrás otras sesenta
+             unidades, cruzando las Aguas de la Muerte hasta Ut-Napishtim, y
+             en todo ese tramo no había muro ninguno: sólo el faldón, que es
+             una tira sin espesor. Desde el Diluvio se veían los últimos
+             paños del ascenso recortados en el vacío, sin cara vertical que
+             los continuara, y parecía geometría a medio construir.
+
+             El lienzo se prolonga ahora hasta la parada de Ut-Napishtim. En
+             ese tramo el recorrido va bajo, así que los paños salen bajos y
+             emergen del agua, y van creciendo con la rampa hasta coronar al
+             nivel del adarve: una calzada amurallada que sube desde el mar,
+             que es lo que el pasaje describe. */
           var matAlmA = materialAlmena();
-          var TRAMOS_A = 9, largoA = (PASO + 30) / TRAMOS_A;
+          var zFinLienzo = z0 - (PASO + 30) / 2;          // junto a la puerta
+          var zIniLienzo = ESTACIONES[est.indice - 1].paradaZ + 6;
+          var largoLienzo = zIniLienzo - zFinLienzo;
+          var TRAMOS_A = Math.max(9, Math.round(largoLienzo / 11.6));
+          var largoA = largoLienzo / TRAMOS_A;
           for (var ta2 = 0; ta2 < TRAMOS_A; ta2++) {
-            var zA = z0 - (PASO + 30) / 2 + largoA * (ta2 + 0.5);
+            var zA = zFinLienzo + largoA * (ta2 + 0.5);
             // altura del recorrido en ese punto, para coronar siempre igual
             var yA = alturaEnZ(zA) - OJO;
             var hSeg = yA + 3.0 + 3.5;
@@ -3732,9 +3808,10 @@ html.js.modo-recorrido #pie{ display:none; }
             grupo.add(tapaUnion);
           }
 
-          // Contrafuertes: salientes cada 9, coronados a la altura del tramo
-          for (var cc = 0; cc < 11; cc++) {
-            var ccz = z0 - 46 + cc * 9;
+          // Contrafuertes cada 9, a lo largo de todo el lienzo prolongado
+          var nCnt = Math.max(11, Math.round(largoLienzo / 9));
+          for (var cc = 0; cc < nCnt; cc++) {
+            var ccz = zFinLienzo + 6 + cc * 9;
             var yC2 = alturaEnZ(ccz) - OJO;
             var hCnt = yC2 + 3.0 + 3.5;
             var cnt = new THREE.Mesh(
@@ -4646,13 +4723,36 @@ html.js.modo-recorrido #pie{ display:none; }
       });
       /* La varying de UV en r128 se llama vUv. */
       materialPavimentoUrukCache.onBeforeCompile = function (sh) {
+        sh.vertexShader = sh.vertexShader
+          .replace('#include <common>',
+                   '#include <common>\nvarying vec3 vMundoPav;')
+          .replace('#include <begin_vertex>',
+                   '#include <begin_vertex>\nvMundoPav = (modelMatrix * instanceMatrix * vec4(transformed,1.0)).xyz;');
         sh.fragmentShader = sh.fragmentShader
+          .replace('#include <common>',
+                   '#include <common>\nvarying vec3 vMundoPav;')
           .replace('#include <map_fragment>', [
             '#include <map_fragment>',
+            // junta tallada en el borde de cada losa
             'float _b = min(min(vUv.x, 1.0 - vUv.x), min(vUv.y, 1.0 - vUv.y));',
             'float _junta = smoothstep(0.0, 0.055, _b);',
             'diffuseColor.rgb = mix(diffuseColor.rgb * vec3(0.42, 0.40, 0.37),',
-            '                       diffuseColor.rgb, _junta);'
+            '                       diffuseColor.rgb, _junta);',
+            /* Todas las losas comparten un atlas de 0 a 1, así que todas
+               mostraban EXACTAMENTE la misma mancha: desde el mirador el
+               suelo se leía como un sello repetido. Tres ondas largas
+               ligadas a la posición en el MUNDO —no a la UV, que vuelve a
+               empezar en cada pieza— rompen esa coincidencia sin añadir
+               ninguna textura nueva. */
+            'float _o = sin(vMundoPav.x * 0.031) * sin(vMundoPav.z * 0.019)',
+            '        + sin((vMundoPav.x + vMundoPav.z) * 0.053) * 0.55',
+            '        + sin(vMundoPav.z * 0.117 + vMundoPav.x * 0.041) * 0.26;',
+            'diffuseColor.rgb *= 1.0 + _o * 0.085;',
+            // arena arrastrada, en manchas aún más largas
+            'float _ar = smoothstep(0.35, 1.0, sin(vMundoPav.x * 0.012 + 1.3)',
+            '                                * sin(vMundoPav.z * 0.0085));',
+            'diffuseColor.rgb = mix(diffuseColor.rgb,',
+            '                       diffuseColor.rgb * vec3(1.11, 1.06, 0.95), _ar * 0.5);'
           ].join('\n'));
       };
     }
@@ -5193,7 +5293,7 @@ html.js.modo-recorrido #pie{ display:none; }
       raiz.traverse(function (o) {
         if (!o.isMesh && !o.isInstancedMesh) return;
         var tipo = o.userData.tipoMaterial || '';
-        var instanciaLejana = /^(uruk-instancias|pavimento-uruk)/.test(tipo);
+        var instanciaLejana = /^(uruk-instancias|uruk-colinas|pavimento-uruk)/.test(tipo);
         /* Las cintas del recorrido —suelo, calzada y faldones— son tiras de
            UNA SOLA CARA construidas a mano, sin espesor. Al darles sombra
            propia se oscurecían enteras: para dibujar el mapa, three.js
