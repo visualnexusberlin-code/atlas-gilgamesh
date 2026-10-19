@@ -3292,23 +3292,64 @@ html.js.modo-recorrido #pie{ display:none; }
       hitos.forEach(function (hi) {
         var zx = hi[0], zz = z0 + hi[1], cuerpos = hi[2];
         var anchoBase = hi[3], fondoBase = anchoBase * 0.79, altoCuerpo = hi[4];
+        /* El cuerpo escalonado era una pila de cajas rectas de igual
+           altura: de ahí que se leyera como un montón, no como fábrica. Tres
+           cosas lo corrigen sin coste apreciable.
+
+           TALUD: cada grada es un tronco de pirámide, más estrecha arriba
+           que abajo, que es como se construye en adobe —un paramento
+           vertical de ese tamaño no se sostiene— y lo que da su perfil
+           característico al zigurat.
+
+           CORNISA: una banda saliente en el arranque de cada grada recoge
+           la sombra y marca el despiece.
+
+           PROPORCIÓN: las gradas merman en altura según suben, de modo que
+           la masa se afina en vez de repetirse igual cinco veces. */
         for (var k = 0; k < cuerpos; k++) {
           var merma = k / cuerpos;
+          var mermaSig = (k + 1) / cuerpos;
           var an = anchoBase * (1 - merma * 0.62);
           var fo = fondoBase * (1 - merma * 0.62);
-          var cuerpo = new THREE.Mesh(
-            new THREE.BoxGeometry(an, altoCuerpo, fo, 1, 2, 1), matZig);
-          cuerpo.position.set(zx, SUELO_LLANURA + altoCuerpo * (k + 0.5), zz);
+          var anSup = anchoBase * (1 - mermaSig * 0.62) * 1.045;
+          var foSup = fondoBase * (1 - mermaSig * 0.62) * 1.045;
+          var altoG = altoCuerpo * (1 - merma * 0.22);
+          var yG = SUELO_LLANURA;
+          for (var kk = 0; kk < k; kk++) yG += altoCuerpo * (1 - (kk / cuerpos) * 0.22);
+
+          /* Tronco de pirámide de base cuadrada: un cilindro de cuatro
+             lados, girado para que las caras miren a los ejes, con el radio
+             superior menor que el inferior. Eso es el talud. */
+          var rSup = (anSup / an) * 0.98;
+          var geoG = new THREE.CylinderGeometry(
+            Math.SQRT1_2 * rSup, Math.SQRT1_2, 1, 4, 2);
+          geoG.rotateY(Math.PI / 4);
+          var cuerpo = new THREE.Mesh(geoG, matZig);
+          cuerpo.position.set(zx, yG + altoG / 2, zz);
+          cuerpo.scale.set(an, altoG, fo);
           cuerpo.castShadow = cuerpo.receiveShadow = true;
           cuerpo.userData.estructura = true;
           hornearAO(cuerpo, 'prop');
           grupo.add(cuerpo);
+
+          // Cornisa en el arranque de la grada
+          var cor = new THREE.Mesh(
+            new THREE.BoxGeometry(an * 1.035, altoG * 0.075, fo * 1.035), matTemplo);
+          cor.position.set(zx, yG + altoG * 0.037, zz);
+          cor.castShadow = cor.receiveShadow = true;
+          cor.userData.estructura = true;
+          grupo.add(cor);
         }
+        /* Las gradas merman, así que la cima ya no está en altoCuerpo por
+           el número de cuerpos: se acumula. */
+        var cimaZig = 0;
+        for (var kc = 0; kc < cuerpos; kc++) cimaZig += altoCuerpo * (1 - (kc / cuerpos) * 0.22);
+
         if (hi[5]) {
           var templo = new THREE.Mesh(
-            new THREE.BoxGeometry(anchoBase * 0.24, altoCuerpo * 1.05,
-                                  anchoBase * 0.19, 1, 2, 1), matTemplo);
-          templo.position.set(zx, SUELO_LLANURA + altoCuerpo * cuerpos + altoCuerpo * 0.52, zz);
+            new THREE.BoxGeometry(anchoBase * 0.26, altoCuerpo * 1.1,
+                                  anchoBase * 0.21, 1, 2, 1), matTemplo);
+          templo.position.set(zx, SUELO_LLANURA + cimaZig + altoCuerpo * 0.55, zz);
           templo.castShadow = templo.receiveShadow = true;
           templo.userData.estructura = true;
           hornearAO(templo, 'prop');
@@ -3320,7 +3361,7 @@ html.js.modo-recorrido #pie{ display:none; }
            a la fachada y dos adosadas que convergen con ella en el primer
            rellano. Es el rasgo que lo distingue de una pirámide escalonada
            cualquiera, y el que da su silueta a la vista desde lejos. */
-        var alturaTotal = altoCuerpo * cuerpos;
+        var alturaTotal = cimaZig;
         var anchoRampa = anchoBase * 0.16;
         var caraFrontal = zz + fondoBase * 0.5;
 
@@ -3861,9 +3902,32 @@ html.js.modo-recorrido #pie{ display:none; }
         /* La rampa era una caja de inclinación fija que no correspondía a
            ningún desnivel real; ahora el suelo lo resuelve la pasarela y
            esto es lo que se ve al subir: escalinata, y la llanura al fondo. */
+        /* DOS SUELOS SUPERPUESTOS.
+           Los peldaños se colocaban con una fórmula propia —base-6,5 más
+           0,42 por escalón— que no tenía nada que ver con la altura real
+           del recorrido. La pasarela pasa por este mismo tramo siguiendo
+           `alturaEnZ`, de modo que había dos suelos a la vez: a z -740 la
+           cinta iba a 4,7 y los peldaños a 6,1. Se veían escalones clavados
+           en un pavimento liso que corría por debajo, a destiempo con la
+           subida.
+
+           Y eran más estrechos que el paso: 17 de ancho contra los 26 de la
+           pasarela, con lo que quedaban 4,6 unidades de hueco a cada lado
+           por las que se veía el vacío bajo la rampa.
+
+           Ahora cada peldaño DERIVA su cota de la misma curva que pisa la
+           cámara, con su cara superior justo donde el visitante apoya, y
+           ocupa el ancho completo del paso. La escalinata deja de estar
+           sobre el suelo: es el suelo. */
+        var PASO_PEL = 2.6, ALTO_PEL = 0.95;
         for (var pe = 0; pe < 26; pe++) {
-          var pel = caja(17, 0.9, 2.6, matPiedra, 0, base - 6.5 + pe * 0.42, z0 + 30 - pe * 2.6);
-          hornearAO(pel, 'prop'); grupo.add(pel);
+          var zPel = z0 + 30 - pe * PASO_PEL;
+          var yPel = alturaEnZ(zPel) - OJO;        // donde se pisa
+          var pel = caja(25.4, ALTO_PEL, PASO_PEL + 0.04, matPiedra,
+                         0, yPel - ALTO_PEL / 2 + 0.06, zPel);
+          hornearAO(pel, 'prop');
+          pel.userData.estructura = true;
+          grupo.add(pel);
         }
         [-1, 1].forEach(function (sg2) {
           /* Muro vidriado flanqueando la escalinata, con sus contrafuertes
