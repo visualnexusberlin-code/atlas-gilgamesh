@@ -410,6 +410,20 @@ html.js.modo-recorrido #btn-sonido{ display:flex; }
 #pasos{
   display:none !important;
 }
+
+/* EL MIRADOR: la última imagen va sin interfaz encima. */
+html.en-mirador #panel,
+html.en-mirador #espina,
+html.en-mirador #pista-guia,
+html.en-mirador #donde,
+html.en-mirador #senal{
+  opacity:0 !important; pointer-events:none !important;
+  transition:opacity .9s ease;
+}
+html.en-mirador #controles,
+html.en-mirador #btn-sonido{ opacity:.35; transition:opacity .9s ease; }
+html.en-mirador #controles:hover,
+html.en-mirador #btn-sonido:hover{ opacity:1; }
 html.js.modo-recorrido #pasos{ display:flex; }
 #pasos button{
   font-family:var(--f-util); font-size:11px; letter-spacing:.14em;
@@ -3119,7 +3133,7 @@ html.js.modo-recorrido #pie{ display:none; }
        cálido— porque a esta distancia la niebla los aclara: si se eligen ya
        claros, desaparecen. */
     (function () {
-      var matZig = superficie('ladrillo', 0x7C5A32, 3, 1, 1.0);
+      var matZig = superficie('ladrillo', 0x7C5A32, 1, 1, 1.0);
       var matTemplo = superficie('caliza', 0xC2B393, 1, 1, 1.0);
       var matRampa = superficie('ladrillo', 0x684A2B, 1, 1, 1.0);
 
@@ -4614,9 +4628,17 @@ html.js.modo-recorrido #pie{ display:none; }
          instancia van de 0 a 1 por pieza, así que el borde se oscurece y se
          hunde con el mismo degradado con que lo haría el mortero. Las losas
          pasan a tocarse y el hueco desaparece. */
-      var m = MATERIALES.caliza;
+      /* UN SOLO SUELO DE PRINCIPIO A FIN.
+         La caliza clara de la coronación aparecía de golpe tras cruzar
+         Ishtar, contra la tierra oscura que trae la pasarela desde el
+         Diluvio: el corte se veía a varias decenas de unidades y rompía el
+         tramo en dos obras distintas. El pavimento adopta la misma tierra y
+         el mismo tono que la cinta, de modo que el visitante pisa el mismo
+         material desde las aguas hasta las murallas. Conserva su junta
+         tallada, que es lo que lo distingue como despiece de losas. */
+      var m = MATERIALES.tierra;
       materialPavimentoUrukCache = new THREE.MeshStandardMaterial({
-        color: 0xB8A17B, roughness: 0.94, metalness: 0, envMapIntensity: 0.18,
+        color: 0x8A6E48, roughness: 0.96, metalness: 0, envMapIntensity: 0.14,
         map: tex(m.color, 1, 1),
         normalMap: tex(m.normal, 1, 1),
         roughnessMap: tex(m.rug, 1, 1),
@@ -4789,7 +4811,10 @@ html.js.modo-recorrido #pie{ display:none; }
     /* La calzada comparte el despiece amplio del pavimento, con un tinte más
        claro: mantiene su jerarquía sin reintroducir el mosaico corto de la
        piedra arquitectónica. */
-    var matCalzada = superficie('tierra', 0xBFA27A, 1, 1, 1.0);
+    /* La calzada central era bastante más clara que la cinta y marcaba una
+       franja pálida por el eje. Se acerca al tono de la tierra: sigue
+       distinguiéndose como vía procesional, sin partir el suelo en dos. */
+    var matCalzada = superficie('tierra', 0x9A7C52, 1, 1, 1.0);
     matCalzada.vertexColors = false;
     var calzada = new THREE.Mesh(gc, matCalzada);
     calzada.receiveShadow = true;
@@ -5269,24 +5294,50 @@ html.js.modo-recorrido #pie{ display:none; }
 
   /* Punto de la ruta en índice fraccionario de estación.
      Interpolación lineal entre nodos: nunca sobrepasa. */
+  /* EL MIRADOR
+     Último gesto del recorrido. Durante doce estaciones la cámara ha ido
+     por el eje mirando al frente, y en la cima eso deja la ciudad asomando
+     por un hueco estrecho entre parapetos, con medio cuadro de cielo vacío.
+     El poema termina mirando lo construido, así que la cámara termina
+     mirándolo: pasada la última estación se separa del eje, se asoma por
+     encima del adarve y gira hacia la llanura. No hay panel ni pieza; sólo
+     Uruk. Es la imagen con la que se cierra. */
+  var MIRADOR = { dx: -19.0, dy: 19.0, dz: -6.0 };
+
+  /* Cuánto del mirador está aplicado: 0 en la estación XII, 1 al final. */
+  function pesoMirador(f) {
+    var t = Math.max(0, Math.min(1, f - (ESTACIONES.length - 1)));
+    return t * t * (3 - 2 * t);
+  }
+
   function puntoRuta(f, salida) {
     var n = NODOS.length;                       // nodo k  =  estación k-1
     var g = Math.max(0, Math.min(n - 1.001, f + 1));
     var i = Math.floor(g), u = g - i;
     var a = NODOS[i], b = NODOS[Math.min(n - 1, i + 1)];
-    return salida.set(
+    salida.set(
       a.x + (b.x - a.x) * u,
       a.y + (b.y - a.y) * u,
       a.z + (b.z - a.z) * u
     );
+    var m = pesoMirador(f);
+    if (m > 0) {
+      salida.x += MIRADOR.dx * m;
+      salida.y += MIRADOR.dy * m;
+      salida.z += MIRADOR.dz * m;
+    }
+    return salida;
   }
 
   function viajarA(i, inmediato) {
-    i = Math.max(0, Math.min(ESTACIONES.length - 1, i));
+    i = Math.max(0, Math.min(ESTACIONES.length, i));
     if (i === destinoIdx && !inmediato) return;
     destinoIdx = i;
     if (inmediato || menosMovimiento) { viaje = i; viajando = false; }
-    mostrar(i);
+    /* El mirador es un destino sin estación: no hay ESTACIONES[12]. El
+       panel conserva el contenido de la última, que de todos modos se
+       oculta al asomarse. */
+    mostrar(Math.min(i, ESTACIONES.length - 1));
   }
 
   function animar() {
@@ -5356,7 +5407,14 @@ html.js.modo-recorrido #pie{ display:none; }
       alza = 12.75 * wA * wA * (3 - 2 * wA);
       panelDonde.classList.toggle('oculto', wA > 0.12);
     }
-    camara.lookAt(0, camara.position.y + alza, camara.position.z - 60);
+    /* En el mirador la mirada deja el eje y busca la ciudad: baja hacia la
+       llanura y se abre hacia los zigurats, que están repartidos a ambos
+       lados pero con su masa principal a la izquierda del eje. */
+    var mMir = pesoMirador(viaje);
+    var miraX = 0 + (-30 - 0) * mMir;
+    var miraY = camara.position.y + alza + (-30 - alza) * mMir;
+    var miraZ = camara.position.z - 60 - 150 * mMir;
+    camara.lookAt(miraX, miraY, miraZ);
 
     escena.fog.color.lerp(objetivo.fog, 0.03);
     escena.background.lerp(objetivo.fondo, 0.03);
@@ -5472,8 +5530,12 @@ html.js.modo-recorrido #pie{ display:none; }
 
     actualizarSenal(posCam);
     panel.classList.toggle('en-marcha', viajando);
+    /* Pasado el umbral del mirador se retira toda la interfaz de lectura:
+       la última imagen no lleva texto encima. */
+    var enMirador = pesoMirador(viaje) > 0.06;
+    document.documentElement.classList.toggle('en-mirador', enMirador);
     barraLlena.style.width =
-      ((viaje / (ESTACIONES.length - 1)) * 100).toFixed(1) + '%';
+      ((viaje / ESTACIONES.length) * 100).toFixed(1) + '%';
 
     render.render(escena, camara);
 
@@ -5551,10 +5613,19 @@ html.js.modo-recorrido #pie{ display:none; }
     document.getElementById('donde-num').textContent = ROMANOS[i];
     document.getElementById('donde-total').textContent = 'de ' + ROMANOS[ESTACIONES.length - 1];
     document.getElementById('donde-sala').textContent = e.marca.replace(/^Estación\s+[IVX]+\s*·\s*/, '');
+    /* En la última estación el panel se fuerza a la izquierda. El lado se
+       elige por dónde cuelga la pieza, pero allí el relieve y los parapetos
+       ocupan todo el flanco derecho y la caja quedaba contra ellos, con el
+       título ilegible. */
+    if (i === ESTACIONES.length - 1) panel.classList.remove('a-derecha');
     document.getElementById('pista-guia').textContent =
       (i === ESTACIONES.length - 1) ? 'Fin del recorrido'
       : (e.imagen ? 'Pulsa para avanzar · Pulsa el relieve para verlo · Rueda atrás para volver'
                   : 'Pulsa para avanzar · Rueda atrás para volver');
+    if (i === ESTACIONES.length - 1) {
+      document.getElementById('pista-guia').textContent =
+        'Pulsa una vez más para asomarte a Uruk';
+    }
   }
 
   /* ==========================================================
@@ -5717,7 +5788,8 @@ html.js.modo-recorrido #pie{ display:none; }
   function paso(dir) {
     // Ya no se descarta nada por estar en marcha: el destino se recoloca
     var destino = destinoIdx + dir;
-    if (destino < 0 || destino > ESTACIONES.length - 1) return;
+    // EPÍLOGO: hay un paso más allá de la última estación (ver MIRADOR)
+    if (destino < 0 || destino > ESTACIONES.length) return;
     ultimoPaso = performance.now();
     acumulado = 0;
     viajarA(destino);
@@ -5836,7 +5908,8 @@ html.js.modo-recorrido #pie{ display:none; }
     }
     if (ev.key === 'Home') { ev.preventDefault(); viajarA(0); }
     if (ev.key === 'End') { ev.preventDefault(); viajarA(ESTACIONES.length - 1); }
-    if (ev.key === 'Enter' && actual >= 0 && ESTACIONES[actual].imagen) {
+    if (ev.key === 'Enter' && actual >= 0 && actual < ESTACIONES.length &&
+        ESTACIONES[actual].imagen) {
       ev.preventDefault(); abrirVisor(actual);
     }
   });
