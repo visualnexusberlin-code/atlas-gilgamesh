@@ -1102,6 +1102,23 @@ html.js.modo-recorrido #pie{ display:none; }
   </div>
 </footer>
 
+<!-- =============== RELIEVES DE REFERENCIA ===============
+     Recortes de los relieves de la Puerta de Ishtar, tomados de una
+     fotografía del autor en el Pergamonmuseum de Berlín y separados del
+     fondo por temperatura de color. NO son imágenes generadas: no llevan
+     aviso de IA porque no les corresponde. El relieve es de dominio
+     público por antigüedad; la fotografía es del autor.
+
+     Van en el DOM y no por TextureLoader porque el motor arranca cuando el
+     visitante pulsa ENTRAR, mucho después de que el documento —con las
+     imágenes ya incrustadas en base64— esté decodificado: ahí se pueden
+     dibujar en el lienzo sin esperar a nada. -->
+<div id="relieves-ref" aria-hidden="true"
+     style="position:absolute;width:0;height:0;overflow:hidden;pointer-events:none">
+  <img id="ref-uro" src="./assets/ishtar-uro.webp" width="416" height="343" alt="">
+  <img id="ref-dragon" src="./assets/ishtar-dragon.webp" width="438" height="291" alt="">
+</div>
+
 <!-- Three.js r128 (build clásico: funciona también abriendo el archivo en local) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
@@ -2855,8 +2872,32 @@ html.js.modo-recorrido #pie{ display:none; }
 
     if (clave === 'friso') { leon(400, 330, 2.5); leon(400, 790, 2.5); }
     if (clave === 'bestias') {
-      uro(268, 300, 1.72, 1); uro(760, 300, 1.72, 1);
-      dragon(268, 800, 1.72, 1); dragon(760, 800, 1.72, 1);
+      /* LOS RELIEVES VIENEN DE LA FOTOGRAFÍA, NO DE UN DIBUJO.
+         Las figuras a mano se leían como una adaptación: por bien medidas
+         que estuvieran las proporciones, les faltaba lo que hace a estos
+         relieves lo que son —que están construidos DE ladrillos, con las
+         hiladas atravesando el cuerpo, y que el esmalte tiene el desgaste
+         de veintiséis siglos—. Eso no se dibuja; se toma.
+
+         En la fotografía cada animal mide unos 52x37 px y en pantalla
+         aparece a un tamaño parecido, así que el recorte va casi 1:1 y la
+         ampliación no inventa nada.
+
+         Las funciones uro() y dragon() se conservan como respaldo: si el
+         recorte no estuviera decodificado —abriendo el archivo suelto con
+         la caché fría, por ejemplo— la fachada sigue teniendo sus bestias
+         en lugar de quedarse en ladrillo liso. */
+      var elUro = document.getElementById('ref-uro');
+      var elDragon = document.getElementById('ref-dragon');
+      function relieve(el, cx, cy, ancho, respaldo) {
+        if (!el || !el.complete || !el.naturalWidth) { respaldo(); return; }
+        var alto = ancho * el.naturalHeight / el.naturalWidth;
+        g.drawImage(el, cx - ancho / 2, cy - alto / 2, ancho, alto);
+      }
+      relieve(elUro, 268, 300, 300, function () { uro(268, 300, 1.72, 1); });
+      relieve(elUro, 760, 300, 300, function () { uro(760, 300, 1.72, 1); });
+      relieve(elDragon, 268, 800, 310, function () { dragon(268, 800, 1.72, 1); });
+      relieve(elDragon, 760, 800, 310, function () { dragon(760, 800, 1.72, 1); });
     }
     if (clave !== 'ladrillo') { banda(0, 52); banda(H - 52, 52); }
     if (clave === 'banda') { for (var r2 = 1; r2 < 6; r2++) banda(H * r2 / 6 - 26, 52); }
@@ -3046,6 +3087,15 @@ html.js.modo-recorrido #pie{ display:none; }
     var matArco = new THREE.MeshStandardMaterial({
       color: 0x174783, roughness: 0.44, metalness: 0.08, envMapIntensity: 0.42
     });
+    /* El filete turquesa del intradós y el dentículo oscuro de las bandas
+       ocres. Son las dos piezas que faltaban para que la archivolta se
+       leyera como la del Pergamon y no como un aro pintado. */
+    var matTurquesa = new THREE.MeshStandardMaterial({
+      color: 0x2E8C86, roughness: 0.42, metalness: 0.06, envMapIntensity: 0.40
+    });
+    var matDentil = new THREE.MeshStandardMaterial({
+      color: 0x14213B, roughness: 0.62, metalness: 0.0, envMapIntensity: 0.18
+    });
     /* Material propio: matPiedra es local a construirCamara y aquí no
        existe. La cimentación queda deliberadamente mate. */
     var matZocalo = superficie('piedra', 0x91836C, 1, 1, 0.95);
@@ -3057,7 +3107,27 @@ html.js.modo-recorrido #pie{ display:none; }
     /* Los animales pertenecen a la fachada. Repetir su atlas en las caras
        laterales recortaba cuerpos y estiraba registros al mirar la puerta
        en escorzo, especialmente desde la izquierda. */
+    /* ESPEJO POR TORRE. En la puerta original los animales de cada torre
+       caminan HACIA el vano: los de la izquierda miran a la derecha y los
+       de la derecha a la izquierda, de modo que la fachada converge sobre
+       el paso. Con un solo material las dos torres mostraban la misma
+       dirección y la mitad de la fachada daba la espalda a la puerta.
+
+       Se resuelve invirtiendo la repetición en U de una copia del mapa:
+       cuesta una textura más y ningún vértice. La copia comparte la imagen
+       de origen, así que no se vuelve a subir a la GPU. */
+    function espejoU(mat) {
+      var m = mat.clone();
+      m.map = mat.map.clone();
+      m.map.wrapS = THREE.RepeatWrapping;
+      m.map.repeat.x = -mat.map.repeat.x;
+      m.map.offset.x = mat.map.offset.x + 1;
+      m.map.needsUpdate = true;
+      return m;
+    }
+    var matBestiasEsp = espejoU(matBestias);
     var materialesTorre = [matAzul, matAzul, matAzul, matAzul, matBestias, matAzul];
+    var materialesTorreEsp = [matAzul, matAzul, matAzul, matAzul, matBestiasEsp, matAzul];
     /* Las alas llevaban ladrillo liso en las seis caras. Pegadas a unas
        torres cubiertas de uros y dragones, producían un corte seco: el
        programa figurativo se interrumpía a media fachada y por debajo de
@@ -3088,7 +3158,8 @@ html.js.modo-recorrido #pie{ display:none; }
       /* Torres anchas, continuas y enmarcadas: la masa gemela es el rasgo
          más reconocible de la puerta de Berlín. Los animales sólo ocupan
          las caras verticales; coronas y cubiertas conservan ladrillo liso. */
-      var torre = new THREE.Mesh(new THREE.BoxGeometry(anchoTorre, altoCuerpo, fondoTorre), materialesTorre);
+      var torre = new THREE.Mesh(new THREE.BoxGeometry(anchoTorre, altoCuerpo, fondoTorre),
+        sg < 0 ? materialesTorre : materialesTorreEsp);
       torre.position.set(cx, sueloZP + altoCuerpo / 2, zP);
       registrar(torre);
 
@@ -3158,45 +3229,105 @@ html.js.modo-recorrido #pie{ display:none; }
         zP + 3.8, 2.15, 2.8, 2.55, matAlmena, true);
     }
 
-    /* Archivolta continua: dos anillos y rosetas reales en lugar de
-       dovelas con una textura entera comprimida en cada pieza. */
-    var exterior = radio + 1.7;
-    var aroAzul = new THREE.Mesh(
-      new THREE.RingGeometry(radio, exterior, 48, 1, 0, Math.PI), matArco);
-    aroAzul.position.set(0, sueloZP + arranqueArco, frente + 0.24);
-    aroAzul.userData.estructura = true; grupo.add(aroAzul);
-    var aroOcre = new THREE.Mesh(
-      new THREE.RingGeometry(radio + 0.52, radio + 0.94, 48, 1, 0, Math.PI), matOcre);
-    aroOcre.position.set(0, sueloZP + arranqueArco, frente + 0.30);
-    aroOcre.userData.estructura = true; grupo.add(aroOcre);
+    /* ARCHIVOLTA DE CUATRO ANILLOS.
+       Medido sobre la fotografía de la puerta en el Pergamon, el arco se
+       compone de dentro hacia fuera de: filete turquesa en el borde del
+       intradós, banda ocre con dentículos, campo azul ANCHO sembrado de
+       rosetas, y segunda banda ocre con dentículos. Aquí había un aro azul
+       y un filete ocre estrecho, con las rosetas clavadas ENCIMA del
+       filete en vez de en su campo: por eso el arco se leía como un aro
+       pintado y no como la archivolta que es.
 
-    /* Juntas radiales modeladas, no pintadas: conservan la lectura de
-       dovelas sin retorcer un mapa rectangular sobre el semicírculo. */
+       El conjunto ensancha de 1,7 a 3,02, que es la proporción del
+       original —en torno a la mitad del radio del hueco— y monta sobre las
+       torres como monta allí. Al ser anillos planos aplicados a la fachada,
+       montar no es penetrar. */
+    var rFilete  = radio + 0.22;
+    var rOcreInt = radio + 0.80;
+    var rCampo   = radio + 2.26;
+    var rOcreExt = radio + 2.84;
+    var exterior = radio + 3.02;
+
+    function aroArco(r0, r1, mat, dz) {
+      var m = new THREE.Mesh(
+        new THREE.RingGeometry(r0, r1, 64, 1, 0, Math.PI), mat);
+      m.position.set(0, sueloZP + arranqueArco, frente + dz);
+      m.userData.estructura = true; grupo.add(m);
+      return m;
+    }
+    aroArco(radio,    rFilete,  matTurquesa, 0.30);
+    aroArco(rFilete,  rOcreInt, matOcre,     0.26);
+    aroArco(rOcreInt, rCampo,   matArco,     0.22);
+    aroArco(rCampo,   rOcreExt, matOcre,     0.26);
+
+    /* Dentículos: cuadrados oscuros embebidos en las dos bandas ocres. Son
+       lo que da escala a la banda; sin ellos el ocre es una cinta lisa. */
+    function dentilesArco(rC, paso, tam) {
+      var n = Math.max(6, Math.round(Math.PI * rC / paso));
+      var im = new THREE.InstancedMesh(
+        new THREE.BoxGeometry(tam, tam, 0.12), matDentil, n);
+      var d = new THREE.Object3D();
+      for (var i = 0; i < n; i++) {
+        var a = (i + 0.5) / n * Math.PI;
+        d.position.set(Math.cos(a) * rC,
+          sueloZP + arranqueArco + Math.sin(a) * rC, frente + 0.33);
+        d.rotation.set(0, 0, a - Math.PI / 2);
+        d.updateMatrix(); im.setMatrixAt(i, d.matrix);
+      }
+      im.instanceMatrix.needsUpdate = true;
+      im.userData.estructura = true; grupo.add(im);
+    }
+    dentilesArco((rFilete + rOcreInt) / 2, 0.62, 0.26);
+    dentilesArco((rCampo + rOcreExt) / 2,  0.66, 0.28);
+
     var matJuntaArco = new THREE.MeshStandardMaterial({
       color: 0x092A58, roughness: 0.72, metalness: 0.0
     });
+    /* Juntas radiales modeladas, no pintadas: conservan la lectura de
+       dovelas sin retorcer un mapa rectangular sobre el semicírculo. Van
+       sólo en el campo azul, que es donde el original las enseña. */
     var juntasArco = new THREE.InstancedMesh(
-      new THREE.BoxGeometry(0.10, exterior - radio, 0.10), matJuntaArco, 13);
+      new THREE.BoxGeometry(0.10, rCampo - rOcreInt, 0.10), matJuntaArco, 15);
     var dummyJunta = new THREE.Object3D();
-    for (var ja = 0; ja < 13; ja++) {
-      var aJ = ja / 12 * Math.PI;
-      var rJ = (radio + exterior) / 2;
+    for (var ja = 0; ja < 15; ja++) {
+      var aJ = ja / 14 * Math.PI;
+      var rJ = (rOcreInt + rCampo) / 2;
       dummyJunta.position.set(Math.cos(aJ) * rJ,
-        sueloZP + arranqueArco + Math.sin(aJ) * rJ, frente + 0.63);
+        sueloZP + arranqueArco + Math.sin(aJ) * rJ, frente + 0.28);
       dummyJunta.rotation.set(0, 0, aJ - Math.PI / 2);
       dummyJunta.updateMatrix(); juntasArco.setMatrixAt(ja, dummyJunta.matrix);
     }
     juntasArco.instanceMatrix.needsUpdate = true;
     juntasArco.userData.estructura = true; grupo.add(juntasArco);
 
+    /* Las jambas repiten la MISMA secuencia de anillos, pero recta: el
+       original no interrumpe la archivolta en el arranque, la baja hasta
+       el suelo. Antes eran un paño azul y un filete, y el encuentro con el
+       arco se notaba como un corte. */
     [-1, 1].forEach(function (sg) {
-      var jamba = new THREE.Mesh(
-        new THREE.BoxGeometry(exterior - radio, arranqueArco, 0.70), matAzulCorto);
-      jamba.position.set(sg * (radio + (exterior - radio) / 2),
-        sueloZP + arranqueArco / 2, frente + 0.22); registrar(jamba);
-      var borde = new THREE.Mesh(new THREE.BoxGeometry(0.42, arranqueArco, 0.78), matOcre);
-      borde.position.set(sg * (radio + 0.73), sueloZP + arranqueArco / 2, frente + 0.31);
-      registrar(borde);
+      function franja(r0, r1, mat, dz) {
+        var f = new THREE.Mesh(
+          new THREE.BoxGeometry(r1 - r0, arranqueArco, 0.52), mat);
+        f.position.set(sg * (r0 + r1) / 2, sueloZP + arranqueArco / 2, frente + dz);
+        registrar(f);
+      }
+      franja(radio,    rFilete,  matTurquesa, 0.30);
+      franja(rFilete,  rOcreInt, matOcre,     0.26);
+      franja(rOcreInt, rCampo,   matAzulCorto, 0.22);
+      franja(rCampo,   rOcreExt, matOcre,     0.26);
+
+      var nd = Math.round(arranqueArco / 0.62);
+      [[(rFilete + rOcreInt) / 2, 0.26], [(rCampo + rOcreExt) / 2, 0.28]].forEach(function (bd) {
+        var im = new THREE.InstancedMesh(
+          new THREE.BoxGeometry(bd[1], bd[1], 0.12), matDentil, nd);
+        var d = new THREE.Object3D();
+        for (var i = 0; i < nd; i++) {
+          d.position.set(sg * bd[0], sueloZP + (i + 0.5) * arranqueArco / nd, frente + 0.33);
+          d.updateMatrix(); im.setMatrixAt(i, d.matrix);
+        }
+        im.instanceMatrix.needsUpdate = true;
+        im.userData.estructura = true; grupo.add(im);
+      });
 
       /* Las paredes del umbral revelan un paso de verdadera profundidad. */
       var paredPaso = new THREE.Mesh(
@@ -3246,35 +3377,53 @@ html.js.modo-recorrido #pie{ display:none; }
        quedar detrás del frente: cierra la franja sin tocar la portada. */
     var enjuta = new THREE.Mesh(
       new THREE.BoxGeometry((radio + 1.55) * 2, 0.9, fondoPaso - 1.5), matAzulCorto);
-    enjuta.position.set(0, sueloZP + arranqueArco + radio + 2.25, zPaso - 1.4);
+    /* Por encima de la archivolta NUEVA. Con el anillo en radio+1,7 este
+       dintel iba a radio+2,25; al ensanchar a radio+3,02 volvía a caer
+       dentro y reaparecía la línea horizontal que partía el arco. */
+    enjuta.position.set(0, sueloZP + arranqueArco + exterior + 0.55, zPaso - 1.4);
     registrar(enjuta);
 
     /* Archivolta trasera: la puerta tiene dos caras. Quien la cruza y mira
        atrás veía el anillo por su reverso, sin relieve. */
     var aroTrasero = new THREE.Mesh(
-      new THREE.RingGeometry(radio, radio + 1.7, 48, 1, 0, Math.PI), matArco);
+      new THREE.RingGeometry(radio, exterior, 48, 1, 0, Math.PI), matArco);
     aroTrasero.position.set(0, sueloZP + arranqueArco, zPaso - fondoPaso / 2 - 0.9);
     aroTrasero.rotation.y = Math.PI;
     aroTrasero.userData.estructura = true; grupo.add(aroTrasero);
 
-    var geoRoseta = new THREE.CylinderGeometry(0.34, 0.34, 0.18, 14);
-    var rosetas = new THREE.InstancedMesh(geoRoseta, matMarfil, 27);
-    var dummy = new THREE.Object3D(), nr = 0, radioRoseta = radio + 0.73;
+    /* Las rosetas van en el CAMPO AZUL, no sobre el filete ocre: ahí era
+       donde estaban clavadas, y por eso la banda se leía como un cordón de
+       perlas en vez de como el sembrado de rosetas del original. Cada una
+       recibe su cerco oscuro, que es lo que la recorta contra el esmalte,
+       y la cuenta se deduce del perímetro en vez de fijarse a mano. */
+    var radioRoseta = (rOcreInt + rCampo) / 2;
+    var nArco = Math.round(Math.PI * radioRoseta / 1.46);
+    var nJamba = Math.round(arranqueArco / 1.46);
+    var totalRos = nArco + nJamba * 2;
+    var geoRoseta = new THREE.CylinderGeometry(0.30, 0.30, 0.20, 14);
+    var geoCerco = new THREE.CylinderGeometry(0.46, 0.46, 0.14, 16);
+    var rosetas = new THREE.InstancedMesh(geoRoseta, matMarfil, totalRos);
+    var cercos = new THREE.InstancedMesh(geoCerco, matDentil, totalRos);
+    var dummy = new THREE.Object3D(), nr = 0;
     function ponerRoseta(xr, yr) {
-      dummy.position.set(xr, yr, frente + 0.72);
-      dummy.rotation.set(Math.PI / 2, 0, 0); dummy.updateMatrix();
-      rosetas.setMatrixAt(nr++, dummy.matrix);
+      dummy.rotation.set(Math.PI / 2, 0, 0);
+      dummy.position.set(xr, yr, frente + 0.36);
+      dummy.updateMatrix(); cercos.setMatrixAt(nr, dummy.matrix);
+      dummy.position.set(xr, yr, frente + 0.41);
+      dummy.updateMatrix(); rosetas.setMatrixAt(nr++, dummy.matrix);
     }
-    for (var rr = 0; rr < 17; rr++) {
-      var ang = rr / 16 * Math.PI;
+    for (var rr = 0; rr < nArco; rr++) {
+      var ang = (rr + 0.5) / nArco * Math.PI;
       ponerRoseta(Math.cos(ang) * radioRoseta,
         sueloZP + arranqueArco + Math.sin(ang) * radioRoseta);
     }
     [-1, 1].forEach(function (sg) {
-      for (var rv = 0; rv < 5; rv++) {
-        ponerRoseta(sg * radioRoseta, sueloZP + 1.35 + rv * (arranqueArco - 2.7) / 4);
+      for (var rv = 0; rv < nJamba; rv++) {
+        ponerRoseta(sg * radioRoseta, sueloZP + (rv + 0.5) * arranqueArco / nJamba);
       }
     });
+    cercos.instanceMatrix.needsUpdate = true;
+    cercos.userData.estructura = true; grupo.add(cercos);
     rosetas.instanceMatrix.needsUpdate = true;
     rosetas.userData.estructura = true; grupo.add(rosetas);
 
