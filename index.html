@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Gilgamesh — La Memoria de Uruk · build 20/10 16:48 · b2275da</title>
+<title>Gilgamesh — La Memoria de Uruk · build 20/10 17:22 · eeeb145</title>
 <meta name="description" content="Recorrido interactivo por los doce pasajes de la Epopeya de Gilgamesh: de la tiranía de Uruk al cielo abierto sobre las murallas. Textos, citas y una arquitectura que narra la transformación del héroe.">
 <link rel="canonical" href="https://epic-gilgamesh.web.app/">
 <link rel="alternate" hreflang="es" href="https://epic-gilgamesh.web.app/">
@@ -755,7 +755,7 @@ html.js.modo-recorrido #pie{ display:none; }
   <!-- SELLO DE VERSIÓN. construir.py lo rellena en cada build. Existe para
        poder distinguir de un vistazo qué archivo se tiene abierto: sin él,
        una copia antigua en Descargas es indistinguible de la recién hecha. -->
-  <p class="sello" id="sello-umbral">build 20/10 16:48 · b2275da</p>
+  <p class="sello" id="sello-umbral">build 20/10 17:22 · eeeb145</p>
 </section>
 
 <!-- ===================== ESCENARIO 3D ===================== -->
@@ -766,7 +766,7 @@ html.js.modo-recorrido #pie{ display:none; }
 <div id="controles">
   <button type="button" id="btn-salir">Salir del recorrido</button>
   <a href="metodologia">Metodología</a>
-  <span class="sello" id="sello-recorrido">build 20/10 16:48 · b2275da</span>
+  <span class="sello" id="sello-recorrido">build 20/10 17:22 · eeeb145</span>
 </div>
 
 <nav id="espina" aria-label="Estaciones del recorrido"></nav>
@@ -2938,16 +2938,60 @@ html.js.modo-recorrido #pie{ display:none; }
 
   /* Ladrillo vidriado oscuro, sin frisos: para almenas y remates, que
      hasta ahora eran cajas de color plano. */
-  function materialAlmena() {
-    if (materialAlmena.cache) return materialAlmena.cache;
-    var t = texturaIshtar('ladrillo');
-    var c = t.clone(); c.needsUpdate = true;
+  /* LAS ALMENAS SON EL MISMO MURO.
+     Se leían como una fábrica distinta por dos motivos, los dos medibles
+     contra el paño: llevaban `color: 0x5C76A8`, un tinte que MULTIPLICA la
+     textura y apagaba el azul —el muro no lleva ninguno—, y una repetición
+     de (0,6 · 0,35) sin relación con la escala de ladrillo del paño, de
+     modo que el despiece no casaba por ningún lado. El acabado también
+     iba desviado: 0,24 / 0,16 / 0,82 frente al 0,21 / 0,18 / 0,88 del
+     vidriado.
+
+     ESCALA. En la torre, `materialIshtar('ladrillo', 1.1, 2.0)` sobre
+     13,2 x 22,8 hace que un atlas completo mida 12,0 x 11,4 unidades de
+     mundo. Cualquier pieza que quiera el mismo ladrillo tiene que repetir
+     en esa proporción, y la cuenta depende de cómo nazcan sus UV:
+
+       - `almenaPerfilada` extruye una silueta, y la extrusión hereda UV en
+         COORDENADAS DE MUNDO: basta repetir 1/12 y 1/11,4.
+       - `almenaEscalonada` apila cajas, con UV normalizadas 0..1 por cara:
+         la repetición ha de ser el tamaño de la pieza dividido por el
+         atlas, y como las gradas miden ~3 x 0,95, sale 0,25 y 0,083.
+
+     De ahí que hagan falta dos materiales para una sola fábrica. */
+  var ATLAS_U = 12.0, ATLAS_V = 11.4;      // lo que mide un atlas en mundo
+
+  function baseAlmena(ru, rv) {
+    var c = texturaIshtar('ladrillo').clone(); c.needsUpdate = true;
     c.wrapS = c.wrapT = THREE.RepeatWrapping;
-    c.repeat.set(0.6, 0.35);
-    materialAlmena.cache = romperTileado(new THREE.MeshStandardMaterial({
-      map: c, color: 0x5C76A8, roughness: 0.24, metalness: 0.16, envMapIntensity: 0.82
+    c.repeat.set(ru, rv);
+    return romperTileado(new THREE.MeshStandardMaterial({
+      map: c, roughness: 0.21, metalness: 0.18, envMapIntensity: 0.88
     }));
+  }
+
+  /* Las gradas en caja de la muralla de Uruk NO siguen la escala del paño
+     de la torre. Atarlas a ella fue un error que se vio al renderizar: con
+     el atlas midiendo 12 unidades y un ladrillo 1,7, en una grada de 3
+     unidades no caben ni dos piezas, y la coronación entera se volvía un
+     damero grueso. La escala de fábrica se elige por el TAMAÑO DE LA
+     PIEZA, no por coherencia aritmética con otro muro; aquí el despiece
+     menudo es el que hace que la almena se lea como almena.
+
+     Conservan por tanto su repetición, y de la unificación toman lo que sí
+     les tocaba: el acabado del vidriado y la ausencia de tinte. */
+  function materialAlmena() {          // gradas en caja: UV normalizadas
+    if (!materialAlmena.cache) {
+      materialAlmena.cache = baseAlmena(0.6, 0.35);
+    }
     return materialAlmena.cache;
+  }
+
+  function materialAlmenaPerfil() {    // silueta extruida: UV de mundo
+    if (!materialAlmenaPerfil.cache) {
+      materialAlmenaPerfil.cache = baseAlmena(1 / ATLAS_U, 1 / ATLAS_V);
+    }
+    return materialAlmenaPerfil.cache;
   }
 
   function materialIshtar(clave, ru, rv) {
@@ -3186,7 +3230,8 @@ html.js.modo-recorrido #pie{ display:none; }
 
       for (var am = 0; am < 5; am++) {
         almenaPerfilada(grupo, cx - 5.0 + am * 2.5,
-          sueloZP + altoCuerpo + altoAtico, zP + 4.0, 2.15, 3.2, 3.0, matAlmena, true);
+          sueloZP + altoCuerpo + altoAtico, zP + 4.0, 2.15, 3.2, 3.0,
+          materialAlmenaPerfil(), true);
       }
 
       /* Alas más bajas y retrasadas: cosen la reconstrucción al mundo
@@ -3226,7 +3271,7 @@ html.js.modo-recorrido #pie{ display:none; }
     bandaFrontal(0, sueloZP + altoCuerpo - 0.72, (radio + 1.65) * 2, frente - 0.15);
     for (var ac = 0; ac < 5; ac++) {
       almenaPerfilada(grupo, -5.2 + ac * 2.6, sueloZP + altoCuerpo,
-        zP + 3.8, 2.15, 2.8, 2.55, matAlmena, true);
+        zP + 3.8, 2.15, 2.8, 2.55, materialAlmenaPerfil(), true);
     }
 
     /* ARCHIVOLTA DE CUATRO ANILLOS.
