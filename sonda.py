@@ -53,6 +53,8 @@ sust.append((r"(\s)camara = new THREE\.PerspectiveCamera\(",
              r"\g<1>window.__cam = camara = new THREE.PerspectiveCamera("))
 sust.append((r"(\s)render = new THREE\.WebGLRenderer\(",
              r"\g<1>window.__rend = render = new THREE.WebGLRenderer("))
+sust.append((r"(\s)var ishtarCache = \{\};",
+             r"\g<1>var ishtarCache = {}; window.__ishtar = ishtarCache;"))
 
 fallos = []
 for patron, reemplazo in sust:

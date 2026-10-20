@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Gilgamesh — La Memoria de Uruk · build 20/10 12:37 · 7135fde</title>
+<title>Gilgamesh — La Memoria de Uruk · build 20/10 12:52 · 14f03d9</title>
 <meta name="description" content="Recorrido interactivo por los doce pasajes de la Epopeya de Gilgamesh: de la tiranía de Uruk al cielo abierto sobre las murallas. Textos, citas y una arquitectura que narra la transformación del héroe.">
 <link rel="canonical" href="https://epic-gilgamesh.web.app/">
 <link rel="alternate" hreflang="es" href="https://epic-gilgamesh.web.app/">
@@ -755,7 +755,7 @@ html.js.modo-recorrido #pie{ display:none; }
   <!-- SELLO DE VERSIÓN. construir.py lo rellena en cada build. Existe para
        poder distinguir de un vistazo qué archivo se tiene abierto: sin él,
        una copia antigua en Descargas es indistinguible de la recién hecha. -->
-  <p class="sello" id="sello-umbral">build 20/10 12:37 · 7135fde</p>
+  <p class="sello" id="sello-umbral">build 20/10 12:52 · 14f03d9</p>
 </section>
 
 <!-- ===================== ESCENARIO 3D ===================== -->
@@ -766,7 +766,7 @@ html.js.modo-recorrido #pie{ display:none; }
 <div id="controles">
   <button type="button" id="btn-salir">Salir del recorrido</button>
   <a href="metodologia">Metodología</a>
-  <span class="sello" id="sello-recorrido">build 20/10 12:37 · 7135fde</span>
+  <span class="sello" id="sello-recorrido">build 20/10 12:52 · 14f03d9</span>
 </div>
 
 <nav id="espina" aria-label="Estaciones del recorrido"></nav>
@@ -2639,89 +2639,206 @@ html.js.modo-recorrido #pie{ display:none; }
     /* La puerta histórica alterna aurocs y mušḫuššu. Son relieves
        simplificados —no ilustraciones arqueológicas—, pero sus perfiles
        hacen que la fachada se reconozca antes de poder leer el detalle. */
+    /* PROPORCIONES TOMADAS DEL RELIEVE, NO INVENTADAS.
+       Las figuras anteriores tenían cuerpo de cabra: torso profundo y
+       patas cortas. Separando los relieves del fondo de la fotografía del
+       Pergamon por temperatura de color —el esmalte es lapislázuli frío y
+       la figura ocre cálido— y midiendo las seis que quedan aisladas en la
+       torre derecha, el reparto real de la altura es:
+
+         uro      torso 36%, patas 31%, cabeza y cuerno 24% sobre el lomo
+         mušḫuššu torso 29%, patas 27%, cuello alzado 39%
+
+       y la relación largo/alto es 1,44 en el uro y 1,43 en el dragón. Todo
+       lo que sigue está acotado a esa retícula: suelo en y +52, lomo del
+       uro en -57, lomo del dragón en -33, punta del cuerno en -95.
+
+       Siguen siendo relieves simplificados, no calcos arqueológicos: lo
+       que se persigue es que la fachada se reconozca antes de poder leer
+       el detalle. */
+
+    /* Marcha: en el original las cuatro patas van separadas, dos
+       adelantadas y dos atrasadas, y las del lado oculto se dibujan en
+       sombra. Es lo que convierte la figura en un animal que camina.
+
+       Una pata NO es un rectángulo: arranca ancha en la espaldilla, se
+       estrecha en la caña y vuelve a ensanchar en el casco. Dibujadas como
+       barras, las figuras se leían como juguetes de madera —medido mirando
+       la baldosa a tamaño completo, que es donde esto se ve y en el muro
+       ya no. */
+    function pata(xa, xb, wa, wb, ya, yb, col, garra) {
+      poly(0, 0, 1, [[xa - wa, ya], [xa + wa, ya],
+                     [xb + wb, yb], [xb - wb, yb]], col);
+      if (garra) {
+        g.strokeStyle = '#3B2614'; g.lineWidth = 4; g.lineCap = 'round';
+        for (var k = 0; k < 3; k++) {
+          g.beginPath(); g.moveTo(xb, yb);
+          g.lineTo(xb + 7 + k * 5, yb + 4 - k * 2); g.stroke();
+        }
+      } else {
+        poly(0, 0, 1, [[xb - wb - 2, yb - 4], [xb + wb + 3, yb - 4],
+                       [xb + wb + 5, yb + 5], [xb - wb - 3, yb + 5]], '#3B2614');
+      }
+    }
+
     function uro(x, y, e, dir) {
       /* Paleta abierta: el ocre claro sube y la sombra baja, porque el
          esmalte del muro es muy oscuro y una figura de tonos medios se
          pierde contra él. */
-      var REL = '#C89A5A', LUZ = '#E6CB92', SOM = '#6A452446', PERF = '#3B2614';
-      SOM = '#6A4524';
+      var REL = '#C89A5A', LUZ = '#E6CB92', SOM = '#8A6334';
       g.save(); g.translate(x, y); g.scale(e * (dir || 1), e);
       g.shadowColor = 'rgba(14,26,50,0.42)'; g.shadowBlur = 6; g.shadowOffsetY = 5;
-      // Cuerpo compacto y cruz alta, más próximo al auroc babilónico.
+
+      // Patas del lado oculto, primero y en sombra.
+      pata(-58, -78,  9, 6, -4, 60, SOM);
+      pata( 34,  22,  9, 6, -6, 60, SOM);
+
+      /* Torso: grupa redonda, lomo levemente arqueado, pecho hondo y
+         vientre recogido. Todo en curvas; el relieve babilónico simplifica
+         los planos pero no cuadra al animal. */
       g.beginPath();
-      g.moveTo(-86,-21); g.bezierCurveTo(-70,-55,10,-61,57,-39);
-      g.bezierCurveTo(77,-29,80,-2,58,11); g.lineTo(-55,13);
-      g.bezierCurveTo(-76,7,-91,-3,-86,-21); g.closePath();
-      g.strokeStyle = PERFIL; g.lineWidth = 6.5; g.lineJoin = 'round'; g.stroke();
+      g.moveTo(-96, -28);
+      g.bezierCurveTo(-99, -51, -78, -59, -48, -58);
+      g.bezierCurveTo(-10, -59,  24, -57,  50, -51);
+      g.bezierCurveTo( 68, -47,  74, -31,  72, -15);
+      g.bezierCurveTo( 70,  -1,  58,   7,  44,   7);
+      g.bezierCurveTo( 10,  11, -30,  11, -60,   7);
+      g.bezierCurveTo(-83,   4, -94, -10, -96, -28);
+      g.closePath();
+      g.strokeStyle = PERFIL; g.lineWidth = 6; g.lineJoin = 'round'; g.stroke();
       g.fillStyle = REL; g.fill();
-      g.fillStyle = LUZ; g.beginPath();
-      g.moveTo(-61,-36); g.bezierCurveTo(-16,-50,30,-46,57,-30);
-      g.lineTo(47,-21); g.bezierCurveTo(12,-32,-28,-31,-61,-24); g.fill();
-      // Cuello, cabeza baja, morro y barba.
-      poly(0, 0, 1, [[45,-39],[72,-48],[99,-33],[101,-9],[78,3],[55,-9]], REL);
-      poly(0, 0, 1, [[91,-20],[119,-17],[125,-5],[113,5],[91,1]], LUZ);
-      poly(0, 0, 1, [[78,0],[94,3],[85,23],[72,10]], SOM);
-      // Cuatro patas finas, dos en sombra para sugerir bajorrelieve.
-      [[-60,SOM],[-34,REL],[31,SOM],[55,REL]].forEach(function (p, i) {
-        var pie = (i % 2) ? 60 : 55;
-        poly(0, 0, 1, [[p[0]-6,5],[p[0]+7,5],[p[0]+5,pie],[p[0]-5,pie]], p[1]);
-        poly(0, 0, 1, [[p[0]-7,pie-2],[p[0]+10,pie-2],[p[0]+13,pie+5],[p[0]-8,pie+5]], PERF);
-      });
+
+      // Lomo iluminado: una banda estrecha pegada al perfil, no medio cuerpo.
+      g.beginPath();
+      g.moveTo(-84, -50);
+      g.bezierCurveTo(-40, -55, 10, -53, 48, -45);
+      g.bezierCurveTo(12, -47, -42, -48, -82, -43);
+      g.closePath(); g.fillStyle = LUZ; g.fill();
+      // Paletilla y pliegue del ijar: dos trazos marcan el volumen.
+      g.strokeStyle = SOM; g.lineWidth = 4; g.lineCap = 'round';
+      g.beginPath(); g.moveTo(40, -44); g.quadraticCurveTo(34, -22, 42, 2); g.stroke();
+      g.beginPath(); g.moveTo(-56, -48); g.quadraticCurveTo(-50, -24, -58, 2); g.stroke();
+      // Papada, que es lo que da el uro y no el buey.
+      g.beginPath();
+      g.moveTo(58, -20); g.bezierCurveTo(76, -20, 78, 4, 56, 6);
+      g.closePath(); g.fillStyle = SOM; g.fill();
+
+      // Cuello descendente y cabeza baja, al modo del friso.
+      g.beginPath();
+      g.moveTo(34, -54);
+      g.bezierCurveTo(58, -64, 80, -64, 94, -57);
+      g.bezierCurveTo(99, -42, 90, -27, 70, -23);
+      g.bezierCurveTo(52, -25, 38, -38, 34, -54);
+      g.closePath();
+      g.strokeStyle = PERFIL; g.lineWidth = 5.5; g.stroke(); g.fillStyle = REL; g.fill();
+      // Cabeza: cuña con testuz alto y hocico romo.
+      g.beginPath();
+      g.moveTo(88, -70);
+      g.bezierCurveTo(106, -69, 122, -60, 124, -50);
+      g.bezierCurveTo(124, -43, 114, -40, 104, -42);
+      g.bezierCurveTo(94, -46, 87, -58, 88, -70);
+      g.closePath();
+      g.strokeStyle = PERFIL; g.lineWidth = 5; g.stroke(); g.fillStyle = LUZ; g.fill();
+      // Hocico en sombra.
+      g.beginPath();
+      g.moveTo(118, -56); g.bezierCurveTo(130, -54, 130, -44, 118, -42);
+      g.closePath(); g.fillStyle = SOM; g.fill();
+
+      // Patas del lado visible.
+      pata(-74, -96, 10, 7, -4, 60, REL);
+      pata( 48,  64, 10, 7, -6, 60, REL);
+
       g.shadowColor = 'transparent';
-      // Cola y cuernos largos en media luna.
+      // Cuerno en media luna hacia adelante, y oreja detrás.
+      g.strokeStyle = LUZ; g.lineWidth = 5.5; g.lineCap = 'round';
+      g.beginPath(); g.moveTo(102, -67);
+      g.bezierCurveTo(116, -78, 124, -88, 123, -96); g.stroke();
+      g.beginPath();
+      g.moveTo(88, -66); g.bezierCurveTo(78, -78, 86, -82, 98, -74);
+      g.closePath(); g.fillStyle = SOM; g.fill();
+      // Cola con borlón.
       g.strokeStyle = SOM; g.lineWidth = 6; g.lineCap = 'round';
-      g.beginPath(); g.moveTo(-80,-21); g.quadraticCurveTo(-108,-43,-101,-65); g.stroke();
-      g.strokeStyle = LUZ; g.lineWidth = 7;
-      g.beginPath(); g.moveTo(87,-35); g.quadraticCurveTo(82,-72,51,-67); g.stroke();
-      g.beginPath(); g.moveTo(99,-31); g.quadraticCurveTo(112,-64,139,-54); g.stroke();
-      g.fillStyle = PERF; g.beginPath(); g.arc(106,-19,3.2,0,6.2832); g.fill();
-      g.strokeStyle = PERF; g.lineWidth = 2.5;
-      g.beginPath(); g.moveTo(-45,-32); g.lineTo(38,-30); g.stroke();
+      g.beginPath(); g.moveTo(-92, -44);
+      g.bezierCurveTo(-108, -18, -104, 6, -98, 18); g.stroke();
+      g.beginPath();
+      g.moveTo(-104, 14); g.bezierCurveTo(-90, 16, -92, 34, -100, 36);
+      g.closePath(); g.fillStyle = SOM; g.fill();
+      g.fillStyle = '#3B2614'; g.beginPath(); g.arc(102, -58, 3.4, 0, 6.2832); g.fill();
       g.restore();
     }
+
     function dragon(x, y, e, dir) {
-      var REL = '#B48952', LUZ = '#D0AF73', SOM = '#76502E', PERF = '#50341F';
+      var REL = '#B48952', LUZ = '#D0AF73', SOM = '#76502E';
       g.save(); g.translate(x, y); g.scale(e * (dir || 1), e);
       g.shadowColor = 'rgba(30,20,10,0.30)'; g.shadowBlur = 5; g.shadowOffsetY = 4;
-      // Tronco escamoso y cola de serpiente.
-      g.fillStyle = REL; g.beginPath();
-      g.moveTo(-75,-24); g.bezierCurveTo(-42,-52,24,-49,61,-27);
-      g.bezierCurveTo(76,-16,68,8,42,14); g.lineTo(-53,11);
-      g.bezierCurveTo(-79,6,-90,-8,-75,-24); g.fill();
-      g.strokeStyle = REL; g.lineWidth = 15; g.lineCap = 'round';
-      g.beginPath(); g.moveTo(-69,-14); g.quadraticCurveTo(-112,-27,-131,-59); g.stroke();
-      g.strokeStyle = LUZ; g.lineWidth = 4;
-      g.beginPath(); g.moveTo(-72,-19); g.quadraticCurveTo(-109,-31,-126,-56); g.stroke();
-      // Cuello serpentino, cabeza cornuda y lengua.
-      g.fillStyle = LUZ; g.beginPath();
-      g.moveTo(45,-30); g.bezierCurveTo(57,-53,58,-81,78,-103);
-      g.bezierCurveTo(89,-116,106,-103,101,-88);
-      g.lineTo(73,-31); g.closePath(); g.fill();
-      poly(0, 0, 1, [[76,-104],[103,-111],[122,-99],[117,-82],[91,-78],[74,-88]], REL);
-      poly(0, 0, 1, [[111,-99],[137,-94],[143,-84],[130,-77],[111,-81]], LUZ);
-      poly(0, 0, 1, [[85,-106],[76,-130],[88,-126],[99,-105]], SOM);
-      g.strokeStyle = SOM; g.lineWidth = 5;
-      g.beginPath(); g.moveTo(105,-103); g.quadraticCurveTo(116,-127,132,-120); g.stroke();
-      // Patas delanteras felinas y traseras de ave, rasgo del mušḫuššu.
-      [[-45,SOM],[-18,REL],[27,SOM],[51,REL]].forEach(function (p, i) {
-        var pie = (i < 2) ? 54 : 49;
-        poly(0, 0, 1, [[p[0]-6,5],[p[0]+7,5],[p[0]+5,pie],[p[0]-5,pie]], p[1]);
-        if (i < 2) {
-          poly(0, 0, 1, [[p[0]-7,pie-2],[p[0]+14,pie-2],[p[0]+18,pie+5],[p[0]-8,pie+5]], PERF);
-        } else {
-          g.strokeStyle = PERF; g.lineWidth = 4; g.lineCap = 'round';
-          for (var gar = 0; gar < 3; gar++) {
-            g.beginPath(); g.moveTo(p[0],pie); g.lineTo(p[0]+8+gar*6,pie+5-gar*2); g.stroke();
-          }
-        }
-      });
+
+      pata(-52, -66, 7.5, 5.5, 6, 64, SOM);
+      pata( 28,  18, 7.5, 5.5, 4, 64, SOM);
+
+      /* Torso esbelto: poco fondo y muy largo, lo contrario que el uro. Esa
+         diferencia de silueta es lo que impide que las dos filas se
+         confundan a la distancia a la que se ven en el muro. */
+      g.beginPath();
+      g.moveTo(-92, -6);
+      g.bezierCurveTo(-95, -25, -76, -34, -48, -33);
+      g.bezierCurveTo(-12, -34,  22, -33,  44, -29);
+      g.bezierCurveTo( 59, -26,  64, -15,  62,  -4);
+      g.bezierCurveTo( 60,   7,  46,  13,  32,  14);
+      g.bezierCurveTo(  0,  17, -40,  17, -66,  13);
+      g.bezierCurveTo(-85,  10, -90,   3, -92,  -6);
+      g.closePath();
+      g.strokeStyle = PERFIL; g.lineWidth = 6; g.lineJoin = 'round'; g.stroke();
+      g.fillStyle = REL; g.fill();
+      g.beginPath();
+      g.moveTo(-80, -27); g.bezierCurveTo(-36, -31, 8, -30, 44, -24);
+      g.bezierCurveTo(6, -25, -38, -25, -78, -21);
+      g.closePath(); g.fillStyle = LUZ; g.fill();
+
+      // Cuello alzado: casi dos quintos de la altura, el rasgo del mušḫuššu.
+      g.beginPath();
+      g.moveTo(36, -26);
+      g.bezierCurveTo(44, -52, 56, -74, 72, -85);
+      g.bezierCurveTo(84, -89, 92, -80, 88, -72);
+      g.bezierCurveTo(74, -58, 64, -38, 60, -19);
+      g.closePath();
+      g.strokeStyle = PERFIL; g.lineWidth = 5.5; g.stroke(); g.fillStyle = REL; g.fill();
+      g.strokeStyle = LUZ; g.lineWidth = 5; g.lineCap = 'round';
+      g.beginPath(); g.moveTo(54, -30);
+      g.bezierCurveTo(64, -54, 72, -72, 82, -82); g.stroke();
+      // Cabeza horizontal, hocico largo.
+      g.beginPath();
+      g.moveTo(70, -90);
+      g.bezierCurveTo(96, -92, 118, -86, 122, -78);
+      g.bezierCurveTo(118, -70, 96, -68, 76, -72);
+      g.bezierCurveTo(68, -78, 66, -86, 70, -90);
+      g.closePath();
+      g.strokeStyle = PERFIL; g.lineWidth = 5; g.stroke(); g.fillStyle = LUZ; g.fill();
+      // Cuerno hacia atrás y lengua bífida.
+      g.strokeStyle = SOM; g.lineWidth = 5; g.lineCap = 'round';
+      g.beginPath(); g.moveTo(78, -88);
+      g.bezierCurveTo(62, -102, 50, -104, 44, -100); g.stroke();
+      g.strokeStyle = '#3B2614'; g.lineWidth = 3;
+      g.beginPath(); g.moveTo(120, -79); g.lineTo(134, -76); g.stroke();
+      g.beginPath(); g.moveTo(120, -77); g.lineTo(133, -70); g.stroke();
+
+      // Patas: delanteras felinas, traseras de ave con garras.
+      pata(-70, -84, 8.5, 6, 6, 64, REL, true);
+      pata( 42,  54, 8.5, 6, 4, 64, REL, false);
+
       g.shadowColor = 'transparent';
-      for (var es = 0; es < 7; es++) {
-        poly(0, 0, 1, [[-48+es*15,-42],[-40+es*15,-57],[-32+es*15,-40]], SOM);
+      // Cola larga y alzada, con borlón: cierra la silueta por detrás.
+      g.strokeStyle = REL; g.lineWidth = 9; g.lineCap = 'round';
+      g.beginPath(); g.moveTo(-86, -20);
+      g.bezierCurveTo(-110, -36, -122, -54, -126, -72); g.stroke();
+      g.beginPath();
+      g.moveTo(-132, -70); g.bezierCurveTo(-118, -78, -122, -94, -130, -96);
+      g.closePath(); g.fillStyle = SOM; g.fill();
+      // Cresta escamosa sobre el lomo.
+      for (var es = 0; es < 6; es++) {
+        poly(0, 0, 1, [[-54 + es * 15, -31], [-47 + es * 15, -43],
+                       [-39 + es * 15, -30]], SOM, false);
       }
-      g.fillStyle = PERF; g.beginPath(); g.arc(112,-91,3.2,0,6.2832); g.fill();
-      g.strokeStyle = PERF; g.lineWidth = 2.5;
-      g.beginPath(); g.moveTo(-43,-32); g.lineTo(38,-30); g.stroke();
+      g.fillStyle = '#3B2614'; g.beginPath(); g.arc(92, -81, 3.2, 0, 6.2832); g.fill();
       g.restore();
     }
     function banda(y, h) {
@@ -2738,8 +2855,8 @@ html.js.modo-recorrido #pie{ display:none; }
 
     if (clave === 'friso') { leon(400, 330, 2.5); leon(400, 790, 2.5); }
     if (clave === 'bestias') {
-      uro(272, 296, 1.34, 1); uro(752, 296, 1.34, 1);
-      dragon(272, 798, 1.26, 1); dragon(752, 798, 1.26, 1);
+      uro(268, 300, 1.72, 1); uro(760, 300, 1.72, 1);
+      dragon(268, 800, 1.72, 1); dragon(760, 800, 1.72, 1);
     }
     if (clave !== 'ladrillo') { banda(0, 52); banda(H - 52, 52); }
     if (clave === 'banda') { for (var r2 = 1; r2 < 6; r2++) banda(H * r2 / 6 - 26, 52); }
