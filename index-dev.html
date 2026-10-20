@@ -1103,21 +1103,26 @@ html.js.modo-recorrido #pie{ display:none; }
 </footer>
 
 <!-- =============== RELIEVES DE REFERENCIA ===============
-     Recortes de los relieves de la Puerta de Ishtar, tomados de una
-     fotografía del autor en el Pergamonmuseum de Berlín y separados del
-     fondo por temperatura de color. NO son imágenes generadas: no llevan
-     aviso de IA porque no les corresponde. El relieve es de dominio
-     público por antigüedad; la fotografía es del autor.
+     RETIRADOS POR LICENCIA. Se usaron dos recortes fotográficos de los
+     relieves tomados de World History Encyclopedia, y ninguno es
+     utilizable aquí:
 
-     Van en el DOM y no por TextureLoader porque el motor arranca cuando el
-     visitante pulsa ENTRAR, mucho después de que el documento —con las
-     imágenes ya incrustadas en base64— esté decodificado: ahí se pueden
-     dibujar en el lienzo sin esperar a nada. -->
-<div id="relieves-ref" aria-hidden="true"
-     style="position:absolute;width:0;height:0;overflow:hidden;pointer-events:none">
-  <img id="ref-uro" src="./assets/ishtar-uro.webp" width="416" height="343" alt="">
-  <img id="ref-dragon" src="./assets/ishtar-dragon.webp" width="438" height="291" alt="">
-</div>
+       - el uro, image/738, está bajo Copyright íntegro: no se puede usar,
+         copiar, distribuir ni modificar sin permiso expreso del autor;
+       - el mušḫuššu, image/3619, de Mina Bulic, está bajo CC BY-NC-ND.
+         La cláusula ND prohíbe las obras derivadas, y recortar, enmascarar,
+         reparar y proyectar sobre un muro es precisamente una derivada.
+
+     Que el relieve babilónico esté en dominio público por antigüedad no
+     alcanza: en Alemania la fotografía de un objeto TRIDIMENSIONAL genera
+     derecho propio del fotógrafo —el caso Reiss-Engelhorn trató justo de
+     fotografías de museo—, de modo que la licencia de la foto es la que
+     manda, no la edad del objeto.
+
+     Mientras no haya un original con licencia que permita obra derivada y
+     uso comercial, la fachada vuelve a uro() y dragon(), que son dibujo
+     propio. El respaldo estaba previsto y entra solo: `relieve()` recurre
+     a él cuando no encuentra la imagen. -->
 
 <!-- Three.js r128 (build clásico: funciona también abriendo el archivo en local) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
