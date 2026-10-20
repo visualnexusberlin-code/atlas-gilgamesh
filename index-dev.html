@@ -4584,9 +4584,24 @@ html.js.modo-recorrido #pie{ display:none; }
              su propia escala da grano a cada peldaño, y la banda de canto
              en tono más claro marca la arista, que es lo que hace legible
              una escalinata en contraluz. */
-          var pel = caja(25.4, ALTO_PEL, PASO_PEL + 0.04, matPeldano,
+          /* LA ESCALINATA SE ESTRECHA AL LLEGAR A LA PUERTA.
+             Medido: la huella iba a 25,4 de ancho constante, es decir de
+             x -12,7 a +12,7, mientras las torres tienen su cara interior
+             en ±6,4 y ocupan z -789 a -779. Los últimos peldaños aterrizan
+             por tanto DENTRO de las torres, y lo que se veía asomar entre
+             las huellas no era muro mal construido: era el arranque de la
+             torre atravesando la piedra.
+
+             Estrechar es además lo correcto: una escalinata monumental no
+             entrega sus 25 unidades a un vano de 11, se recoge. Conserva
+             la amplitud abajo —que es la que da la entrada— y en los ocho
+             últimos peldaños cierra hasta 12,4, justo por dentro de las
+             torres y algo más ancha que el paso. */
+          var tramoAlto = Math.max(0, (pe - 17) / 8);          // 0 … 1
+          var anchoPel = 25.4 - (25.4 - 12.4) * Math.min(1, tramoAlto);
+          var pel = caja(anchoPel, ALTO_PEL, PASO_PEL + 0.04, matPeldano,
                          0, yPel - ALTO_PEL / 2 + 0.06, zPel);
-          var canto = caja(25.4, 0.11, 0.13, matCanto,
+          var canto = caja(anchoPel, 0.11, 0.13, matCanto,
                            0, yPel + 0.015, zPel + PASO_PEL / 2 + 0.02);
           canto.userData.estructura = true; grupo.add(canto);
           hornearAO(pel, 'prop');
