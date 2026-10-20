@@ -1224,6 +1224,7 @@ html.js.modo-recorrido #pie{ display:none; }
   var activo = false, iniciado = false, actual = -1;
 
   var escena, camara, render, luzEstacion, luzCielo, luzRasante, polvo;
+  var CIELO = null;
   var PAVIMENTO_FINAL = null;
   var antorchas = [];
   var objetivo = {
@@ -1941,6 +1942,13 @@ html.js.modo-recorrido #pie{ display:none; }
   var UNIDAD_TEXTURA_SUELO = 12.8;   // atlas amplio: mismas losas, menos repetición
 
   function ajustarTiling(malla) {
+    /* Escotilla para materiales cuya repetición esté resuelta a mano:
+       reescalarla por el tamaño de la malla rompe la coherencia entre
+       piezas de tamaños distintos. Hoy no la usa nadie —los hitos de Uruk,
+       que la estrenaron, han pasado a material liso— pero el caso es real y
+       vuelve en cuanto haya dos mallas dispares con la misma fábrica. */
+    if (malla.material && malla.material.userData &&
+        malla.material.userData.sinTiling) return;
     // idempotente: la llaman tanto caja() como hornearAO
     if (malla.userData.uvHecho) return;
     malla.userData.uvHecho = true;
@@ -2104,6 +2112,147 @@ html.js.modo-recorrido #pie{ display:none; }
 
   /* Cielo reflejado: degradado equirrectangular. Sin esto el metal
      no tiene nada que devolver y el agua parece plástico. */
+  /* LA BÓVEDA DEL CIELO
+     El fondo era un color plano: donde el recorrido se abre —la llegada a
+     Ishtar, la coronación, el mirador— medio cuadro quedaba en un naranja
+     uniforme que delataba la escena como un decorado. Un cielo real tiene
+     tres cosas que aquí faltaban: gradiente de cenit a horizonte, una banda
+     de CALIMA baja donde el polvo de la llanura se acumula, y nubes.
+
+     Se dibuja una vez sobre lienzo y se envuelve en una esfera invertida.
+     No recibe niebla —la niebla la lleva pintada en su propia banda baja,
+     que es lo que la funde con el terreno— y su color se multiplica por el
+     tono de la estación, de modo que sigue viajando con la atmósfera igual
+     que lo hacía el color plano. */
+  var cieloCache = null;
+  function texturaCielo() {
+    if (cieloCache) return cieloCache;
+    var W = 1024, H = 512;
+    var cv = document.createElement('canvas');
+    cv.width = W; cv.height = H;
+    var g = cv.getContext('2d');
+    var s = 60013;
+    function az() { s = (s * 9301 + 49297) % 233280; return s / 233280; }
+
+    /* DÓNDE CABE EL CIELO.
+       Medido sobre la escena, no supuesto: en el mirador la cámara está a
+       y 42,4 y mira ligeramente hacia abajo (dirY -0,141), de modo que el
+       borde superior de la pantalla cae en v = 0,378 y el horizonte —el
+       ecuador de la esfera— en v = 0,50. Todo el cielo que el visitante
+       llega a ver ocupa una franja de 0,12 de la textura. La versión
+       anterior repartía veintiséis bandas de nubes por TODA la altura y
+       echaba encima una calima al 95 % desde v = 0,46: de las nubes casi
+       ninguna caía en la franja visible, y las que caían quedaban
+       sepultadas. De ahí el color plano del que vienen las quejas.
+
+       Ahora todo el contenido vive entre v 0,12 y 0,50, que cubre también
+       el ascenso a Ishtar, donde la mirada sube. Por debajo de 0,50 no hay
+       nada que dibujar: lo tapa la llanura. */
+    var HOR = 0.50;
+    var grad = g.createLinearGradient(0, 0, 0, H);
+    /* El azul tiene que SOBREVIVIR hasta cerca del horizonte. La versión
+       anterior ya llegaba a crema en v 0,38 —es decir, a 22° de elevación,
+       justo el borde superior de la pantalla—, de modo que toda la franja
+       visible nacía pálida y las nubes se dibujaban blanco sobre blanco.
+       Las paradas van ahora por elevación real: 90°, 50°, 29°, 16°, 7°, 0°. */
+    grad.addColorStop(0.00, '#3E68A8');   // cenit
+    grad.addColorStop(0.22, '#5886BC');
+    grad.addColorStop(0.34, '#7C9FC4');
+    grad.addColorStop(0.41, '#A8B2B8');
+    grad.addColorStop(0.455, '#D4C7AC');
+    grad.addColorStop(HOR,  '#EFE0C4');   // horizonte
+    grad.addColorStop(1.00, '#EFE0C4');
+    g.fillStyle = grad; g.fillRect(0, 0, W, H);
+
+    /* Resol bajo: no un disco, sino el halo que levanta el polvo. Fuera del
+       eje para que no quede centrado en la vista final. */
+    /* Acotado: con radio 0,30 del lienzo y alfa 0,50 el halo lavaba toda
+       la franja visible, y como la textura repite dos veces en horizontal
+       salía además duplicado. */
+    var sol = g.createRadialGradient(W * 0.72, H * 0.475, 0, W * 0.72, H * 0.475, W * 0.19);
+    sol.addColorStop(0, 'rgba(255,238,206,0.34)');
+    sol.addColorStop(0.5, 'rgba(255,236,204,0.12)');
+    sol.addColorStop(1, 'rgba(255,236,204,0)');
+    g.fillStyle = sol; g.fillRect(0, 0, W, H);
+
+    /* Nubes: bancos horizontales deshilachados, de cielo seco. La
+       distribución se sesga hacia el horizonte con una potencia, y la
+       altura de cada banco MERMA con la cercanía al horizonte: así es como
+       la perspectiva apila los estratos, y es lo que convierte una mancha
+       en distancia. */
+    for (var b2 = 0; b2 < 26; b2++) {
+      /* ALTURA DE LOS BANCOS, EN GRADOS SOBRE EL HORIZONTE.
+         v y elevación se relacionan como elev = (0,5 - v) * 180. La franja
+         que el visitante ve en el mirador va de 0° a 22°, o sea v 0,378 a
+         0,50. Los bancos estaban en v 0,12–0,31: entre 34° y 68°, fuera de
+         pantalla, que es por lo que el cielo seguía saliendo liso aunque la
+         textura estuviera bien. Van ahora de v 0,325 a 0,487 —de 2° a 31°—
+         que además es donde se apilan los estratos de verdad. Una quinta
+         parte se queda arriba como cirros, para cuando la mirada sube en
+         el ascenso a Ishtar. */
+      var alto2 = b2 % 5 === 0;                  // cirros altos
+      var t2 = Math.pow(az(), 0.6);              // sesgo hacia el horizonte
+      var vB = alto2 ? (0.15 + az() * 0.13) : (0.325 + t2 * 0.162);
+      var yB = H * vB;
+      var cerca = alto2 ? 0 : t2;                // 0 arriba … 1 horizonte
+      /* ANCHO ACOTADO Y REPARTO POR CASILLAS.
+         Con bancos de hasta 1073 px —más que el propio lienzo— y cuarenta
+         y cuatro de ellos apilados en una franja de 0,16 de altura, el
+         blanco semitransparente se sumaba hasta saturar: medido, el píxel
+         en v 0,38 valía #faf7f0 donde el degradado pedía #B6B9B4. El cielo
+         no salía liso por el render ni por la calima, sino porque las
+         nubes se lo comían. Cada banco se queda por debajo de un cuarto
+         del lienzo y se reparte en casillas con holgura, de modo que entre
+         ellos quede aire. */
+      var anB = (86 + az() * 150) * (1 + cerca * 0.85);
+      var alB = (5 + az() * 11) * (1 - cerca * 0.66);
+      var xB = ((b2 * 0.6180339887) % 1) * W + (az() - 0.5) * W * 0.05;
+      /* Sobre un fondo que ahora es azul hasta abajo, los bancos pueden
+          y deben tener cuerpo: con la opacidad antigua se perdían. */
+      var op = (0.11 + az() * 0.24) * (1 - cerca * 0.18);
+      g.fillStyle = 'rgba(255,250,243,' + op.toFixed(3) + ')';
+      for (var k2 = 0; k2 < 7; k2++) {
+        g.beginPath();
+        g.ellipse(xB + (az() - 0.5) * anB, yB + (az() - 0.5) * alB * 1.6,
+                  anB * (0.22 + az() * 0.4), alB * (0.5 + az() * 0.7),
+                  0, 0, 6.2832);
+        g.fill();
+      }
+      // Sombra bajo el banco: sin ella son manchas, no volúmenes.
+      g.fillStyle = 'rgba(126,116,124,' + (op * 0.85).toFixed(3) + ')';
+      g.beginPath();
+      g.ellipse(xB, yB + alB * 0.95, anB * 0.5, alB * 0.34, 0, 0, 6.2832);
+      g.fill();
+    }
+
+    /* CALIMA: la banda baja de polvo en suspensión, lo que funde el cielo
+       con la llanura. Sólo la última franja antes del horizonte: pasada de
+       v 0,46 a v 0,40 y de 0,95 a 0,80, deja de comerse los estratos. */
+    var cal = g.createLinearGradient(0, H * 0.465, 0, H * HOR);
+    cal.addColorStop(0, 'rgba(240,222,196,0)');
+    cal.addColorStop(0.55, 'rgba(242,226,200,0.30)');
+    cal.addColorStop(1, 'rgba(244,230,206,0.68)');
+    g.fillStyle = cal; g.fillRect(0, H * 0.465, W, H * (HOR - 0.465));
+
+    var t = new THREE.CanvasTexture(cv);
+    t.wrapS = THREE.RepeatWrapping; t.wrapT = THREE.ClampToEdgeWrapping;
+    t.repeat.set(2, 1);
+    /* CODIFICACIÓN. El renderizador saca en sRGB y ninguna textura del
+       proyecto declara la suya, de modo que three.js las toma por lineales
+       y las eleva al escribir. En los materiales PBR eso forma parte del
+       aspecto ya ajustado y no se toca; pero la bóveda es un material
+       básico, sin luz que module nada, así que la subida es íntegra: el
+       azul #abb7bd que pedía el degradado llegaba a pantalla como
+       (221,218,213), un gris casi blanco. Medido encendiendo la bóveda en
+       rojo —el cielo se volvía rojo, luego sí se dibujaba— y comparando el
+       píxel con la textura. Declarándola sRGB el viaje de ida y vuelta es
+       la identidad y el cielo se ve como se pinta. */
+    t.encoding = THREE.sRGBEncoding;
+    sinCosteOculto(t);
+    cieloCache = t;
+    return t;
+  }
+
   function cieloReflejado(arriba, abajo) {
     if (cieloCache) return cieloCache;
     var cv = document.createElement('canvas');
@@ -3237,11 +3386,15 @@ html.js.modo-recorrido #pie{ display:none; }
        como un muro gris al final del paso— y se baja su centro, porque
        colgaba por encima de la línea de visión. */
     var horizonte = z0 - 260;
-    var tex = texturaSkylineUruk();
+    /* No se llama `tex`: ese nombre pertenece a la fábrica de texturas del
+       motor, y una variable local con `var` lo sombrea en TODA la función
+       por elevación, de modo que cualquier llamada posterior a tex() dentro
+       de construirUruk fallaba con «tex is not a function». */
+    var texSkyline = texturaSkylineUruk();
     var piel = new THREE.Mesh(
       new THREE.PlaneGeometry(600, 164),
       new THREE.MeshBasicMaterial({
-        map: tex, transparent: true, depthWrite: false, fog: true
+        map: texSkyline, transparent: true, depthWrite: false, fog: true
       })
     );
     piel.position.set(-20, base + 42, horizonte);
@@ -3300,16 +3453,53 @@ html.js.modo-recorrido #pie{ display:none; }
        cálido— porque a esta distancia la niebla los aclara: si se eligen ya
        claros, desaparecen. */
     (function () {
-      var matZig = superficie('ladrillo', 0x7C5A32, 1, 1, 1.0);
-      var matTemplo = superficie('caliza', 0xC2B393, 1, 1, 1.0);
-      var matRampa = superficie('ladrillo', 0x684A2B, 1, 1, 1.0);
+      /* SIN MAPA DE LADRILLO. La incoherencia que se veía desde la
+         coronación no era de tono sino de naturaleza: la ciudad entera
+         —cientos de casas instanciadas— son volúmenes de color liso sin
+         mapa, y los hitos eran lo ÚNICO texturado de toda la vista. A
+         trescientas y pico unidades bajo calima ningún despiece de ladrillo
+         resuelve; lo que el mapa producía era muaré, unas masas rayadas
+         entre otras lisas. De ahí el efecto de parche.
+
+         Los hitos pasan a material liso como el caserío. La masa sigue sin
+         leerse como un cono porque el relieve se lo dan el talud, las
+         cornisas, los machones de nichos y el AO horneado, que son
+         geometría y vértice: cuestan cero por píxel y no producen muaré.
+
+         `envMapIntensity` sigue la misma escala de calima que las casas
+         (0.12 + niebla de la capa), de modo que el conjunto reacciona a la
+         luz del final como una sola fábrica. */
+      function matHito(hex) {
+        return new THREE.MeshStandardMaterial({
+          color: hex, roughness: 0.99, metalness: 0, envMapIntensity: 0.34
+        });
+      }
+      /* Los tonos se eligen DENTRO de la familia del caserío —0x6A5132,
+         0x5E482E, 0x53402A— y ligeramente por encima de él: un hito es más
+         alto, recibe más cielo y debe destacar por luz, no por color. El
+         remate de caliza estaba en 0xC2B393, casi blanco contra esa paleta:
+         era la «estructura alta que no se comprende», un bloque pálido
+         flotando sobre la bruma. Baja a un hueso terroso que lo devuelve al
+         conjunto sin perder el contraste que marca la cima. */
+      var matZig = matHito(0x7A5F3C);
+      var matTemplo = matHito(0x9C8560);
+      /* La escalinata iba en 0x684A2B, el tono MÁS oscuro de los tres, sobre
+         una losa inclinada que apenas recibe luz rasante: de ahí la banda
+         ascendente demasiado oscura para su distancia. Va en el tono del
+         cuerpo, un punto por encima, que es lo que hace una escalinata
+         enlucida al sol. */
+      var matRampa = matHito(0x876B46);
 
       /* x, z (relativo a z0), cuerpos, ancho base, altura de cuerpo, templo */
+      /* Estaban demasiado cerca: ocupaban medio cuadro y su despiece se
+         leía pieza a pieza, de modo que el defecto de textura quedaba en
+         primer plano. Alejados, ganan la escala de un hito en el horizonte
+         y la bruma hace su parte. */
       var hitos = [
-        [-31, -205, 6, 58, 8.8, true],    // el de Eanna: domina el perfil
-        [ 46, -258, 5, 44, 7.4, true],    // su réplica al otro lado del eje
-        [-78, -310, 4, 36, 6.6, false],   // más lejos, ya sin remate visible
-        [ 18, -352, 4, 30, 6.0, false]
+        [-44, -300, 6, 72, 10.4, true],   // el de Eanna: domina el perfil
+        [ 62, -372, 5, 54, 8.6, true],    // su réplica al otro lado del eje
+        [-98, -432, 4, 44, 7.4, false],   // más lejos, ya sin remate visible
+        [ 26, -488, 4, 36, 6.6, false]
       ];
 
       hitos.forEach(function (hi) {
@@ -3352,6 +3542,7 @@ html.js.modo-recorrido #pie{ display:none; }
           cuerpo.scale.set(an, altoG, fo);
           cuerpo.castShadow = cuerpo.receiveShadow = true;
           cuerpo.userData.estructura = true;
+          cuerpo.userData.tipoMaterial = 'uruk-hitos';
           hornearAO(cuerpo, 'prop');
           grupo.add(cuerpo);
 
@@ -3361,6 +3552,7 @@ html.js.modo-recorrido #pie{ display:none; }
           cor.position.set(zx, yG + altoG * 0.037, zz);
           cor.castShadow = cor.receiveShadow = true;
           cor.userData.estructura = true;
+          cor.userData.tipoMaterial = 'uruk-hitos';
           grupo.add(cor);
         }
         /* Las gradas merman, así que la cima ya no está en altoCuerpo por
@@ -3375,6 +3567,7 @@ html.js.modo-recorrido #pie{ display:none; }
           templo.position.set(zx, SUELO_LLANURA + cimaZig + altoCuerpo * 0.55, zz);
           templo.castShadow = templo.receiveShadow = true;
           templo.userData.estructura = true;
+          templo.userData.tipoMaterial = 'uruk-hitos';
           hornearAO(templo, 'prop');
           grupo.add(templo);
         }
@@ -3392,9 +3585,17 @@ html.js.modo-recorrido #pie{ display:none; }
         var rampaCentral = new THREE.Mesh(
           new THREE.BoxGeometry(anchoRampa, 1.8, alturaTotal * 1.55), matRampa);
         rampaCentral.position.set(zx, SUELO_LLANURA + alturaTotal * 0.5, caraFrontal + 6);
-        rampaCentral.rotation.x = -0.72;
+        /* SIGNO. Con -0.72 el extremo local +Z —el que mira al espectador—
+           era el que subía: la escalinata se elevaba hacia fuera, acababa
+           en el aire a 39 unidades por delante del zigurat y lo que se veía
+           era su cara INFERIOR, que no recibe luz. Esa era la banda oscura
+           que no se explicaba a esa distancia; no era el tono ni la sombra.
+           Con +0.72 sube hacia la fachada: su cima queda en z -1112,6 a
+           y 53,7, sobre la cumbre (53,2), que es donde debe morir. */
+        rampaCentral.rotation.x = 0.72;
         rampaCentral.castShadow = rampaCentral.receiveShadow = true;
         rampaCentral.userData.estructura = true;
+        rampaCentral.userData.tipoMaterial = 'uruk-hitos';
         grupo.add(rampaCentral);
 
         /* Las escalinatas laterales del zigurat de Ur se han probado y
@@ -3407,7 +3608,8 @@ html.js.modo-recorrido #pie{ display:none; }
         /* Machones de nichos en el cuerpo bajo: el zigurat tampoco es liso. */
         muroDeNichos(grupo, matZig, zx, SUELO_LLANURA + altoCuerpo * 0.55,
                      zz + fondoBase * 0.5, anchoBase * 0.92, altoCuerpo * 0.8,
-                     0.9, anchoBase * 0.085, 1);
+                     0.9, anchoBase * 0.085, 1)
+          .userData.tipoMaterial = 'uruk-hitos';
       });
     })();
 
@@ -5224,7 +5426,13 @@ html.js.modo-recorrido #pie{ display:none; }
            el terreno está 23 más abajo— eso deja la pasarela flotando.
            El faldón se alarga hasta encontrar la llanura allí donde el
            recorrido va por lo alto. */
-        var fondo = (yy > 6) ? -3.4 : (yy - 1.8);
+        /* El condicional dejaba el faldón en 1,8 unidades allí donde el
+           recorrido va bajo, que es justo el tramo del Diluvio: el canto
+           terminaba casi al nivel del agua y la plataforma se leía como una
+           lámina flotando, con el agua visible por debajo del borde. Ahora
+           baja SIEMPRE por debajo de la llanura y del fondo del agua, de
+           modo que la calzada tiene costado en todo su recorrido. */
+        var fondo = Math.min(yy - 2.0, -4.4);
         vb.push(sg * ANCHO * aperturaB / 2, yy + 0.45, uz,
                 sg * ANCHO * aperturaB / 2, fondo, uz);
         /* UV ligadas al mundo: antes no existían y el material pétreo
@@ -5496,6 +5704,32 @@ html.js.modo-recorrido #pie{ display:none; }
 
     escena = new THREE.Scene();
     escena.background = new THREE.Color(0x1A1208);
+
+    /* La bóveda del cielo. Esfera invertida, sin niebla —su propia banda
+       de calima es la que la funde con el terreno— y sin escribir
+       profundidad, de modo que todo lo demás se dibuja por delante.
+
+       RADIO 620, NO 900: el plano lejano de la cámara está en 900. Una
+       esfera de radio 900 centrada en la cámara tiene TODOS sus puntos
+       exactamente sobre ese plano, así que se recortaba entera y el cielo
+       no se dibujaba nunca. Holgura amplia y asunto cerrado.
+
+       COLOR BLANCO E INTOCABLE: en un material básico el color multiplica
+       el mapa. Teñirlo con `fondo` —que es un pardo casi negro, el color
+       de la galería cerrada— apagaba la textura hasta dejarla en nada. La
+       unión con el terreno no se hace tiñendo la bóveda sino con su propia
+       banda de calima, que ya lleva el crema del llano. */
+    CIELO = new THREE.Mesh(
+      new THREE.SphereGeometry(620, 32, 20),
+      new THREE.MeshBasicMaterial({
+        map: texturaCielo(), side: THREE.BackSide,
+        fog: false, depthWrite: false,
+        transparent: true, opacity: 0
+      })
+    );
+    CIELO.renderOrder = -1;
+    CIELO.frustumCulled = false;
+    escena.add(CIELO);
     escena.environment = entornoGaleria();   // reflejo ambiental para todo el PBR
     escena.fog = new THREE.FogExp2(0x3A2A18, 0.03);
 
@@ -5594,11 +5828,21 @@ html.js.modo-recorrido #pie{ display:none; }
            ascenso a Ishtar desaparecía por eso. Reciben sombra, no la
            proyectan: sin volumen no hay nada que proyectar. */
         var planar = o.userData.planar === true;
+        /* Los hitos —zigurat, cornisas, templos y escalinata— están entre
+           300 y 500 unidades. Ahí el mapa de sombras ya no tiene resolución
+           que repartir, y lo que produce no es sombra sino acné: la losa de
+           la escalinata, que mide 1,8 de grosor por 88 de largo e inclina
+           41°, se sombreaba A SÍ MISMA de punta a punta y salía como una
+           tabla oscura, imposible de explicar a esa distancia. No proyectan
+           ni reciben: su relieve lo dan el talud, las cornisas y el AO de
+           vértice, que no dependen de la luz. De paso libera presupuesto de
+           sombra para lo que el visitante tiene delante. */
+        var hitoLejano = tipo === 'uruk-hitos';
         var m = o.material;
         var etereo = m && (m.transparent === true || m.isMeshBasicMaterial ||
                            m.isPointsMaterial || m.isLineBasicMaterial);
-        o.receiveShadow = true;
-        o.castShadow = !instanciaLejana && !etereo && !planar;
+        o.receiveShadow = !hitoLejano;
+        o.castShadow = !instanciaLejana && !etereo && !planar && !hitoLejano;
         if (o.castShadow) n++;
       });
       return n;
@@ -5828,6 +6072,28 @@ html.js.modo-recorrido #pie{ display:none; }
 
        `amb` es el multiplicador por cámara. No cambia el NÚMERO de luces,
        sólo su intensidad: los shaders no se recompilan. */
+    if (CIELO) {
+      /* La bóveda acompaña a la cámara para que la esfera nunca se cruce
+         con nada, y aparece sólo donde hay cielo que ver.
+
+         El criterio lo da el propio `fondo` de cada cámara, que ya separa
+         las salas: pardo casi negro bajo techo (0x1A1208, 0x0A0B10) y crema
+         al aire libre en el ascenso y las murallas (0xCBA079, 0xD8A876). Su
+         luminancia, estirada entre 0.34 y 0.72, abre el cielo justo en las
+         dos estaciones que lo necesitan y lo mantiene cerrado en la galería,
+         sin añadir un indicador nuevo que luego haya que mantener a mano en
+         doce sitios.
+
+         Se lee del fondo YA amortiguado, no del objetivo, así que el cielo
+         entra y sale con la misma curva que la luz y la niebla. */
+      var lum = escena.background.r * 0.30 +
+                escena.background.g * 0.59 +
+                escena.background.b * 0.11;
+      var ap = (lum - 0.34) / (0.72 - 0.34);
+      CIELO.material.opacity = ap < 0 ? 0 : (ap > 1 ? 1 : ap);
+      CIELO.visible = CIELO.material.opacity > 0.01;
+      CIELO.position.copy(posCam);
+    }
     ambiente += (objetivo.amb - ambiente) * 0.04;
     luzCielo.intensity = 0.26 * ambiente;
     luzRasante.intensity = 0.30 * ambiente;

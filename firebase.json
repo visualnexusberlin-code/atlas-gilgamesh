@@ -8,6 +8,8 @@
       "**/node_modules/**",
       "index-dev.html",
       "construir.py",
+      "sonda.py",
+      "prueba-render.html",
       "assets/**",
       "referencias/**",
       "**/*.md",
