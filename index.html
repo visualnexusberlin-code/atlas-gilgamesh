@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Gilgamesh — La Memoria de Uruk · build 20/10 23:04 · 9354b41</title>
+<title>Gilgamesh — La Memoria de Uruk · build 21/10 11:26 · d01af1d</title>
 <meta name="description" content="Recorrido interactivo por los doce pasajes de la Epopeya de Gilgamesh: de la tiranía de Uruk al cielo abierto sobre las murallas. Textos, citas y una arquitectura que narra la transformación del héroe.">
 <link rel="canonical" href="https://epic-gilgamesh.web.app/">
 <link rel="alternate" hreflang="es" href="https://epic-gilgamesh.web.app/">
@@ -755,7 +755,7 @@ html.js.modo-recorrido #pie{ display:none; }
   <!-- SELLO DE VERSIÓN. construir.py lo rellena en cada build. Existe para
        poder distinguir de un vistazo qué archivo se tiene abierto: sin él,
        una copia antigua en Descargas es indistinguible de la recién hecha. -->
-  <p class="sello" id="sello-umbral">build 20/10 23:04 · 9354b41</p>
+  <p class="sello" id="sello-umbral">build 21/10 11:26 · d01af1d</p>
 </section>
 
 <!-- ===================== ESCENARIO 3D ===================== -->
@@ -766,7 +766,7 @@ html.js.modo-recorrido #pie{ display:none; }
 <div id="controles">
   <button type="button" id="btn-salir">Salir del recorrido</button>
   <a href="metodologia">Metodología</a>
-  <span class="sello" id="sello-recorrido">build 20/10 23:04 · 9354b41</span>
+  <span class="sello" id="sello-recorrido">build 21/10 11:26 · d01af1d</span>
 </div>
 
 <nav id="espina" aria-label="Estaciones del recorrido"></nav>
@@ -4651,8 +4651,15 @@ html.js.modo-recorrido #pie{ display:none; }
             grupo.add(seg);
             /* El mismo despiece de nichos en la cara interior del lienzo:
                es el muro que se tiene al lado durante toda la subida. */
+            /* EL SIGNO ESTABA DOS VECES. `sg2 * (14.2 - sg2 * 1.1)` da 13,1
+               a la derecha, que es correcto -la cara interior del paño, que
+               va a sg2*14,2 con 2,2 de ancho-, pero a la izquierda da -15,3
+               en vez de -13,1: el despiece de nichos se despegaba 2,2
+               unidades de su muro y quedaba flotando en el aire, que es lo
+               que se veía como losas sueltas en el primer plano izquierdo.
+               La inserción no depende del lado, sólo la posición. */
             muroDeNichos(grupo, materialIshtar('ladrillo', 1, 1),
-                         sg2 * (14.2 - sg2 * 1.1), -3.5 + hSeg * 0.52, zA,
+                         sg2 * (14.2 - 1.1), -3.5 + hSeg * 0.52, zA,
                          largoA - 0.4, hSeg * 0.86, 0.30, 2.0, -sg2);
           }
 
@@ -4762,8 +4769,10 @@ html.js.modo-recorrido #pie{ display:none; }
           /* Nichos en la cara que mira al adarve: es la que se tiene
              delante durante todo el tramo final, y lisa se leía como un
              bloque de color. */
+          /* Mismo signo repetido que en el ascenso: a la izquierda daba
+             -14,3 en vez de -11,7, y el despiece quedaba fuera del parapeto. */
           muroDeNichos(grupo, materialIshtar('ladrillo', 1, 1),
-                       sgn * (13 - sgn * 1.3), base + 1.15, z0,
+                       sgn * (13 - 1.3), base + 1.15, z0,
                        PASO + 26, 2.2, 0.34, 2.15, -sgn);
           var matAlmena = materialAlmena();
           // Almenado piramidal continuo: es lo que da escala a la muralla
@@ -5118,8 +5127,27 @@ html.js.modo-recorrido #pie{ display:none; }
     var sesgo = enc.sesgo, x = enc.x;
     var giro = lado * (-Math.PI / 2 + sesgo);
 
-    var y = base + arranque + alto / 2 + 0.65;
     var z = z0 - 4;
+    /* LA COTA SE TOMA DEL SUELO REAL, NO DE LA SALA.
+       `base` es una constante por cámara, y eso vale mientras el suelo sea
+       plano. En el ascenso a Ishtar la calzada SUBE con la z: medido, a la
+       altura de la pieza el suelo está en y 9,0 mientras la cartela ocupa
+       de 8,7 a 10,2, de modo que la calzada le pasaba por delante y la
+       cortaba en diagonal. No era una malla intrusa; era el propio suelo.
+
+       Tomando la altura del recorrido en la z de la pieza, la pieza sube
+       con el terreno y la cartela queda siempre por encima. Donde el suelo
+       es plano, `alturaEnZ` devuelve la misma cota que `base` y el máximo
+       no cambia nada: las otras once estaciones quedan igual. */
+    /* Y DEL EXTREMO MÁS ALTO, no del centro: la pieza mide trece unidades
+       de fondo y va girada hacia el visitante, de modo que su extremo
+       lejano cae donde la calzada ya ha subido. Tomando sólo el centro
+       seguía cortándola por ese lado. */
+    var sueloPieza = Math.max(base,
+                              alturaEnZ(z) - OJO,
+                              alturaEnZ(z - 7.5) - OJO,
+                              alturaEnZ(z + 7.5) - OJO);
+    var y = sueloPieza + arranque + alto / 2 + 0.65;
 
     /* PUNTO DE PARADA
        La cámara se detenía en z0, a sólo 4 unidades del relieve y con él
