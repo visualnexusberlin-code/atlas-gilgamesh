@@ -29,10 +29,15 @@ Requiere Node y Python 3 con Pillow.
 
 ## Publicación
 
+Automática: cada push a `main` publica en Firebase mediante
+`.github/workflows/deploy.yml`, con el secreto `FIREBASE_SERVICE_ACCOUNT`
+(clave de una cuenta de servicio del proyecto `epic-gilgamesh`).
+
+A mano, si hiciera falta:
+
 ```bash
 firebase login:list            # confirma la cuenta activa
-firebase use epic-gilgamesh
-firebase deploy --only hosting
+firebase deploy --only hosting --project epic-gilgamesh
 ```
 
 `firebase.json` publica la raíz e ignora `fuente/`, `assets/`, `referencias/`

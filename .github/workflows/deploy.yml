@@ -1,0 +1,27 @@
+# Cada push a main publica la raíz del repositorio en Firebase Hosting (epic-gilgamesh).
+# Los HTML ya vienen construidos (fuente/build.py), así que no hay paso de build.
+# Requiere el secreto FIREBASE_SERVICE_ACCOUNT (clave JSON de una cuenta de
+# servicio del proyecto epic-gilgamesh). Sin él, el job termina sin publicar.
+name: Publicar Gilgamesh
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      TIENE_CLAVE: ${{ secrets.FIREBASE_SERVICE_ACCOUNT != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Aviso si falta la clave
+        if: env.TIENE_CLAVE != 'true'
+        run: echo "::warning::Falta el secreto FIREBASE_SERVICE_ACCOUNT; no se publica."
+      - name: Publicar en Firebase Hosting
+        if: env.TIENE_CLAVE == 'true'
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          projectId: epic-gilgamesh
+          channelId: live
