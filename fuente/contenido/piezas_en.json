@@ -1,0 +1,44 @@
+[
+ {
+  "archivo": "pieza1.jpg",
+  "estacion": 0,
+  "aspecto": 0.6961,
+  "titulo": "Gilgamesh and Aga · obverse",
+  "nota": "Old Babylonian tablet from southern Iraq. Sulaymaniyah Museum, Iraqi Kurdistan."
+ },
+ {
+  "archivo": "pieza2.jpg",
+  "estacion": 2,
+  "aspecto": 0.6921,
+  "titulo": "Gilgamesh and Aga · reverse",
+  "nota": "The same tablet seen from the back: the Sumerian poem of the siege of Uruk."
+ },
+ {
+  "archivo": "pieza3.jpg",
+  "estacion": 3,
+  "aspecto": 2.4437,
+  "titulo": "Seal of Mesannepada",
+  "nota": "Drawing of the seal of the king of Ur. Naked heroes holding lions, Early Dynastic period."
+ },
+ {
+  "archivo": "pieza4.jpg",
+  "estacion": 5,
+  "aspecto": 1.3571,
+  "titulo": "Ninurta and the Anzu bird",
+  "nota": "Relief from the temple of Ninurta at Nimrud: the armed god pursues the monster of chaos."
+ },
+ {
+  "archivo": "pieza5.jpg",
+  "estacion": 7,
+  "aspecto": 1.4873,
+  "titulo": "Scorpion-man",
+  "nota": "Mesopotamian cylinder seal. Scorpion-men guard the gates of Mount Mashu."
+ },
+ {
+  "archivo": "pieza6.jpg",
+  "estacion": 8,
+  "aspecto": 0.8842,
+  "titulo": "The Flood Tablet",
+  "nota": "Tablet XI of the poem, from the library of Ashurbanipal at Nineveh. British Museum."
+ }
+]

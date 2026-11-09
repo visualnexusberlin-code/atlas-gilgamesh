@@ -1,0 +1,44 @@
+[
+ {
+  "archivo": "pieza1.jpg",
+  "estacion": 0,
+  "aspecto": 0.6961,
+  "titulo": "Gilgameš y Aga · anverso",
+  "nota": "Tablilla paleobabilónica del sur de Irak. Museo de Solimania, Kurdistán iraquí."
+ },
+ {
+  "archivo": "pieza2.jpg",
+  "estacion": 2,
+  "aspecto": 0.6921,
+  "titulo": "Gilgameš y Aga · reverso",
+  "nota": "La misma tablilla por su cara posterior: el poema sumerio del asedio de Uruk."
+ },
+ {
+  "archivo": "pieza3.jpg",
+  "estacion": 3,
+  "aspecto": 2.4437,
+  "titulo": "Sello de Mesannepada",
+  "nota": "Dibujo del sello del rey de Ur. Héroes desnudos sujetando leones, Dinástico Arcaico."
+ },
+ {
+  "archivo": "pieza4.jpg",
+  "estacion": 5,
+  "aspecto": 1.3571,
+  "titulo": "Ninurta y el pájaro Anzu",
+  "nota": "Relieve del templo de Ninurta en Nimrud: el dios armado persigue al monstruo del caos."
+ },
+ {
+  "archivo": "pieza5.jpg",
+  "estacion": 7,
+  "aspecto": 1.4873,
+  "titulo": "Hombre-escorpión",
+  "nota": "Sello cilíndrico mesopotámico. Los hombres-escorpión guardan las puertas del monte Mashu."
+ },
+ {
+  "archivo": "pieza6.jpg",
+  "estacion": 8,
+  "aspecto": 0.8842,
+  "titulo": "La Tablilla del Diluvio",
+  "nota": "Tablilla XI del poema, biblioteca de Asurbanipal en Nínive. British Museum."
+ }
+]
