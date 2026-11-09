@@ -104,6 +104,7 @@ for L in ['es','en']:
       </figure>''')
     out=open(D+'template.html').read()
     vals={**t,'pieParrafos':'\n'.join(f'    <p>{x}</p>' for x in t['pie'])}
+    vals['incipitCun']=''.join(f'<span class="sg" style="--i:{k}">{c}</span>' for k,c in enumerate(INCIPIT))
     out=re.sub(r'\{\{t:(\w+)\}\}', lambda m: str(vals[m.group(1)]), out)
     cun={'incipit':INCIPIT,'incipitLectura':t['incipitLectura'],'estaciones':[{'num':NUM[i],'signos':SIG[i],'lectura':LEC[L][i]} for i in range(12)]}
     out=out.replace('{{FONTS}}',fonts).replace('{{ESTACIONES}}','\n'.join(est)).replace('{{TESTIMONIOS}}','\n'.join(tes))

@@ -76,21 +76,51 @@ html.js:not(.sin3d):not(.leyendo) #umbral{ position:fixed; inset:0; z-index:40; 
 html:not(.preparado) #umbral::before, html.sin3d #umbral::before{ background:radial-gradient(120% 90% at 70% 10%, rgba(217,168,78,.16), transparent 60%), var(--betun); }
 html.dentro #umbral{ opacity:0; visibility:hidden; transition:opacity 1.4s var(--ease), visibility 0s 1.4s; }
 .signo{ font-size:clamp(54px,7vw,92px); line-height:1; color:var(--arena); margin:0 0 20px; opacity:.92; }
+/* El nombre, tallado: una luz rasante lo recorre despacio, como la que se usa
+   para fotografiar las tablillas y hacer legible lo grabado (RTI). */
 #umbral h1{
   font-family:var(--f-display); font-weight:500; margin:0; line-height:.92; letter-spacing:-.01em;
-  font-size:clamp(64px,10vw,152px); color:var(--hueso);
-  text-shadow:0 2px 40px rgba(0,0,0,.45);
+  font-size:clamp(64px,10vw,152px);
+  background:linear-gradient(104deg, #A8987A 0%, #DCCDB0 30%, #F4EAD6 44%, #FFF8EA 50%, #F4EAD6 56%, #DCCDB0 70%, #A8987A 100%);
+  background-size:280% 100%; background-position:100% 0;
+  -webkit-background-clip:text; background-clip:text; color:transparent; -webkit-text-fill-color:transparent;
+  filter:drop-shadow(0 1px 0 rgba(255,244,222,.18)) drop-shadow(0 -1px 0 rgba(0,0,0,.7)) drop-shadow(0 16px 36px rgba(0,0,0,.55));
+  animation:rasante 14s ease-in-out 1.2s infinite alternate;
 }
-#umbral h1 em{ display:block; font-style:italic; font-weight:500; font-size:clamp(26px,3.6vw,54px); letter-spacing:0; color:var(--arena); margin-top:.25em; }
+@keyframes rasante{ from{ background-position:100% 0; } to{ background-position:0% 0; } }
+#umbral h1 em{ display:block; font-style:italic; font-weight:500; font-size:clamp(26px,3.6vw,54px); letter-spacing:0; color:var(--arena); -webkit-text-fill-color:var(--arena); margin-top:.25em; }
 .entradilla{ max-width:46ch; margin:28px 0 36px; color:var(--hueso-2); font-size:clamp(16px,1.15vw + 4px,19px); }
-.puertas{ display:flex; gap:28px; align-items:center; flex-wrap:wrap; }
-.puerta{
-  font-family:var(--f-texto); font-weight:500; font-size:15px; letter-spacing:.02em;
-  padding:16px 30px; border:0; cursor:pointer; color:#fff; background:var(--lapis);
-  box-shadow:0 12px 28px -12px rgba(0,0,0,.8); transition:background .4s var(--ease), transform .4s var(--ease);
+.puertas{ display:flex; gap:16px; align-items:center; flex-wrap:wrap; }
+.puerta{ font-size:19px; padding:15px 30px 14px; }
+/* ARCILLA: botones como tablillas cocidas; el texto, grabado con el cálamo */
+.puerta, .ficha{
+  --barro-luz:#C99D6C; --barro:#A47650; --barro-sombra:#7E5535;
+  position:relative; display:inline-flex; align-items:center; gap:.5em; cursor:pointer;
+  font-family:var(--f-display); font-weight:600; letter-spacing:.07em; text-decoration:none;
+  color:#3B2414;
+  text-shadow:0 1px 0 rgba(255,226,186,.5), 0 -1px 0 rgba(36,18,6,.6);
+  border:0;
+  border-radius:9px 12px 10px 13px / 12px 9px 13px 10px;
+  background-color:var(--barro);
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .32 0 0 0 0 .2 0 0 0 0 .1 0 0 0 .5 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
+    radial-gradient(130% 160% at 28% 18%, var(--barro-luz) 0%, var(--barro) 52%, var(--barro-sombra) 100%);
+  box-shadow:
+    inset 0 2px 1px rgba(255,230,190,.38),
+    inset 0 -4px 8px rgba(58,32,14,.45),
+    inset 2px 0 3px rgba(255,220,180,.12),
+    0 3px 0 #5E3D24,
+    0 14px 26px -12px rgba(0,0,0,.85);
+  transition:transform .35s var(--ease), filter .35s var(--ease), box-shadow .35s var(--ease);
 }
-.puerta:hover:not(:disabled){ background:#2D63BC; transform:translateY(-1px); }
-.puerta:disabled{ background:#3A3226; color:#A99A82; cursor:progress; box-shadow:none; }
+.puerta:hover:not(:disabled), .ficha:hover{ transform:translateY(-1px); filter:brightness(1.07); color:#2E1A0C; }
+.puerta:active:not(:disabled), .ficha:active{ transform:translateY(2px);
+  box-shadow:inset 0 3px 6px rgba(40,20,8,.55), inset 0 -1px 1px rgba(255,230,190,.25), 0 1px 0 #5E3D24, 0 6px 14px -8px rgba(0,0,0,.8); }
+.puerta:focus-visible, .ficha:focus-visible{ outline:1px solid var(--hueso); outline-offset:5px; }
+/* sin cocer mientras se prepara el recorrido: arcilla cruda, gris y mate */
+.puerta:disabled{ --barro-luz:#9C8F7E; --barro:#7F7364; --barro-sombra:#615749; color:#3A332B; cursor:progress; filter:saturate(.6); }
+.ficha{ --barro-luz:#D6B993; --barro:#B8956C; --barro-sombra:#8F6E4C; font-size:16px; padding:10px 18px 9px; letter-spacing:.05em; }
+.ficha[aria-pressed="true"]{ --barro-luz:#3C5F9A; --barro:#2A4C86; --barro-sombra:#1C3563; color:#E9E2D2; text-shadow:0 -1px 0 rgba(0,0,0,.5), 0 1px 0 rgba(160,190,240,.25); }
 html.sin3d #btn-recorrido{ display:none; }
 .enlace{ background:none; border:0; padding:4px 0; cursor:pointer; color:var(--arena); text-decoration:underline; text-underline-offset:.3em; text-decoration-thickness:1px; font-size:15px; }
 .enlace:hover{ color:var(--hueso); }
@@ -103,11 +133,11 @@ html.dentro .recorrido{ display:flex; }
 #controles{ position:fixed; z-index:30; top:clamp(14px,3vh,28px); left:clamp(16px,3vw,40px); gap:6px; align-items:center; }
 .boton-ui{
   display:inline-flex; align-items:center; gap:8px; height:40px; padding:0 15px; cursor:pointer;
-  background:rgba(17,14,10,.42); border:1px solid rgba(236,227,208,.14); color:var(--hueso-2);
+  background:rgba(48,30,18,.55); border:1px solid rgba(210,179,133,.22); color:var(--hueso-2); border-radius:6px 8px 7px 9px;
   font-size:15px; letter-spacing:.01em; backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
   transition:background .3s, color .3s, border-color .3s;
 }
-.boton-ui:hover{ background:rgba(17,14,10,.7); color:var(--hueso); border-color:rgba(236,227,208,.3); }
+.boton-ui:hover{ background:rgba(74,48,28,.75); color:var(--hueso); border-color:rgba(210,179,133,.45); }
 .boton-ui svg{ width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.4; }
 #btn-sonido[aria-pressed="false"] .onda{ display:none; }
 #btn-sonido[aria-pressed="true"] .mudo{ display:none; }
@@ -195,12 +225,27 @@ html.js:not(.sin3d):not(.leyendo) #lectura, html.js:not(.sin3d):not(.leyendo) #p
 /* ============ IDIOMA Y TABLILLA ============ */
 .cun{ font-family:"CUN"; font-weight:400; font-style:normal; }
 .idioma{ position:absolute; top:clamp(20px,4vh,40px); right:clamp(24px,6vw,96px); font-size:15px; }
-.idioma a{ color:var(--hueso-2); }
-.incipit{ display:none; margin:0 0 22px; }
-.incipit .cun{ display:block; font-size:clamp(40px,5vw,72px); line-height:1.1; letter-spacing:.12em; color:var(--arena); }
-.incipit .lectura-cun{ display:block; margin-top:10px; font-size:15px; color:#A8997F; font-style:italic; }
-html.tablilla .incipit{ display:block; }
-html.tablilla .signo{ display:none; }
+.idioma .ficha{ font-size:14px; padding:7px 13px 6px; }
+/* ÍNCIPIT: las primeras palabras del poema se imprimen signo a signo, como el
+   cálamo en la arcilla; luego un hilo de lapislázuli las recorre, como el
+   escáner que hoy las lee. */
+.incipit{ position:relative; display:inline-block; margin:0 0 26px; padding-bottom:4px; }
+.incipit .cun{ display:block; font-size:clamp(42px,5.2vw,76px); line-height:1.1; letter-spacing:.14em; color:#CDA675;
+  text-shadow:0 1px 0 rgba(0,0,0,.8), 0 -1px 0 rgba(255,232,196,.22), 0 0 26px rgba(217,168,78,.18); }
+.incipit .sg{ display:inline-block; opacity:0; transform:translateY(-3px) scale(1.16); filter:blur(3px);
+  animation:impronta 1s cubic-bezier(.2,.8,.2,1) forwards; animation-delay:calc(.5s + var(--i) * .34s); }
+@keyframes impronta{ 55%{ opacity:1; transform:scale(.96); filter:blur(0); } to{ opacity:1; transform:none; filter:none; } }
+.incipit .lectura-cun{ display:block; margin-top:10px; font-size:15px; color:#A8997F; font-style:italic; opacity:0; animation:aparece 1.4s ease 2.9s forwards; }
+@keyframes aparece{ to{ opacity:1; } }
+.incipit::after{ content:""; position:absolute; left:-4%; right:-4%; top:0; height:1px; pointer-events:none; opacity:0;
+  background:linear-gradient(90deg, transparent, rgba(127,166,230,.9) 30%, rgba(200,220,255,1) 50%, rgba(127,166,230,.9) 70%, transparent);
+  box-shadow:0 0 12px 1px rgba(90,140,230,.55);
+  animation:escaneo 13s ease-in-out 3s infinite; }
+@keyframes escaneo{ 0%{ top:0; opacity:0; } 3%{ opacity:.95; } 17%{ top:72%; opacity:.9; } 21%{ top:78%; opacity:0; } 100%{ top:78%; opacity:0; } }
+@media (prefers-reduced-motion: reduce){
+  .incipit .sg, .incipit .lectura-cun{ opacity:1; transform:none; filter:none; animation:none; }
+  .incipit::after, #umbral h1{ animation:none; }
+}
 #btn-tablilla .cun{ font-size:16px; line-height:1; }
 #btn-tablilla[aria-pressed="true"], #btn-tablilla-umbral[aria-pressed="true"]{ color:var(--hueso); border-color:rgba(127,166,230,.55); }
 #panel-cun{ display:none; margin:0 0 18px; }
@@ -240,15 +285,14 @@ html.tablilla .nota-tablilla{ display:block; }
 <div id="escena" aria-hidden="true"><canvas id="lienzo"></canvas></div>
 
 <section id="umbral" aria-labelledby="titulo-obra">
-  <p class="signo lu" aria-hidden="true">&#x12177;</p>
-  <nav class="idioma" aria-label="Idioma"><a href="/en" hreflang="en" lang="en">English</a></nav>
-  <p class="incipit" lang="akk-Xsux"><span class="cun">𒊭𒅘𒁀𒄿𒈬𒊒</span><span class="lectura-cun">ša nag-ba i-mu-ru · «El que vio lo profundo», primeras palabras del poema</span></p>
+  <nav class="idioma" aria-label="Idioma"><a class="ficha" href="/en" hreflang="en" lang="en">English</a></nav>
+  <p class="incipit" lang="akk-Xsux"><span class="cun"><span class="sg" style="--i:0">𒊭</span><span class="sg" style="--i:1">𒅘</span><span class="sg" style="--i:2">𒁀</span><span class="sg" style="--i:3">𒄿</span><span class="sg" style="--i:4">𒈬</span><span class="sg" style="--i:5">𒊒</span></span><span class="lectura-cun">ša nag-ba i-mu-ru · «El que vio lo profundo», primeras palabras del poema</span></p>
   <h1 id="titulo-obra">Gilgamesh<em>La memoria de Uruk</em></h1>
   <p class="entradilla">Doce pasajes del poema más antiguo que se conserva, recorridos a pie. El camino empieza entre muros estrechos y termina bajo el cielo abierto: el espacio se ensancha a medida que el rey aprende que va a morir.</p>
   <div class="puertas">
     <button class="puerta" id="btn-recorrido" type="button" disabled>Preparando el recorrido…</button>
-    <a class="enlace" href="#lectura" id="btn-lectura">Leer los doce pasajes</a>
-    <button class="enlace" type="button" id="btn-tablilla-umbral" aria-pressed="false">Ver en escritura cuneiforme</button>
+    <a class="ficha" href="#lectura" id="btn-lectura">Leer los doce pasajes</a>
+    <button class="ficha" type="button" id="btn-tablilla-umbral" aria-pressed="false">Ver en escritura cuneiforme</button>
   </div>
   <p class="nota-umbral">Unos quince minutos. Se avanza con la rueda, las flechas o deslizando el dedo. Con sonido.</p>
   <p class="coleccion">Atlas Humanitas<br>Biblioteca Visual de la Antigüedad</p>
