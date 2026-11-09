@@ -1,0 +1,7 @@
+{
+  "name": "atlas-gilgamesh",
+  "private": true,
+  "description": "Fuente de Gilgamesh — La Memoria de Uruk. `python3 build.py` genera index.html, en/index.html y las páginas de metodología en la raíz del repositorio.",
+  "scripts": { "build": "python3 build.py" },
+  "devDependencies": { "three": "0.170.0", "esbuild": "^0.24.0" }
+}
